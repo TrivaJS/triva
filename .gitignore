@@ -1,12 +1,2 @@
 useage.md
 /snippets
-index.js
-lib/config/config.js
-lib/logging/logger.js
-lib/policy/policy_engine.js
-lib/server/build.js
-lib/server/request.js
-lib/server/response.js
-lib/storage/cache_config.js
-lib/storage/local_cache.js
-lib/utils/request_id.js
