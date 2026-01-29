@@ -7,7 +7,6 @@ coverage/
 dist/
 build/
 *.tgz
-/company-demo
+/dev-testing
 /docs
-/test-project
-INSTALL.md
+/test

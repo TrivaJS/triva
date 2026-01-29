@@ -1,24 +1,32 @@
 # Triva
 
-Enterprise-grade Node.js HTTP framework with advanced middleware, throttling, logging, caching, error tracking, and cookie support.
+Enterprise-grade Node.js HTTP framework with centralized configuration, database adapters, advanced middleware, and complete developer visibility.
 
 ## ✨ Features
 
-- 🚀 **Zero Dependencies** - Pure Node.js, no external packages
-- 🛡️ **Advanced Throttling** - Sliding window, burst protection, auto-ban, UA rotation detection
-- 📊 **Comprehensive Logging** - Request logs with cookies, UA data, and analytics
-- ⚡ **Built-in Caching** - LRU eviction, TTL, pattern matching
+- 🎯 **Centralized Configuration** - Everything configured in `build()`
+- 🗄️ **Multiple Databases** - Memory, MongoDB, Redis, PostgreSQL, MySQL
+- 📦 **Auto-Detection** - Helpful errors if database packages aren't installed
+- 🚀 **Zero Dependencies** (core) - Optional database drivers as needed
+- 🛡️ **Advanced Throttling** - Sliding window, burst protection, auto-ban
+- 📊 **Comprehensive Logging** - Request logs with cookies, UA data
+- ⚡ **Built-in Caching** - Works with any supported database
 - 🔍 **Error Tracking** - Automatic error capture with full context
-- 🍪 **Cookie Parser** - Parse and set cookies with ease
+- 🍪 **Cookie Parser** - Parse and set cookies easily
 - 📥 **File Operations** - Download and send files
 - 🌐 **JSONP Support** - Cross-domain API calls
 - ⚙️ **Custom Middleware** - Full Express-style middleware support
-- 📝 **TypeScript Support** - Complete type definitions included
 
 ## 📦 Installation
 
 ```bash
 npm install triva
+
+# Optional: Install database driver if needed
+npm install mongodb  # For MongoDB
+npm install redis    # For Redis
+npm install pg       # For PostgreSQL
+npm install mysql2   # For MySQL
 ```
 
 ## 🚀 Quick Start
@@ -26,199 +34,240 @@ npm install triva
 ```javascript
 import { build, get, listen } from 'triva';
 
-build();
-
-get('/', (req, res) => {
-  res.json({ message: 'Hello World!' });
-});
-
-listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-});
-```
-
-## 📖 Core Concepts
-
-### Server Setup
-
-```javascript
-import { build, middleware, listen } from 'triva';
-
-build({ env: 'development' });
-
-middleware({
-  retention: {
-    enabled: true,
-    maxEntries: 10000
+// All configuration in one place!
+await build({
+  env: 'development',
+  
+  cache: {
+    type: 'memory',
+    retention: 600000
   },
+  
   throttle: {
     limit: 100,
     window_ms: 60000
   }
 });
 
+get('/', (req, res) => {
+  res.json({ message: 'Hello World!' });
+});
+
 listen(3000);
 ```
+
+## 🎯 Centralized Configuration
+
+Everything is configured in `build()`:
+
+```javascript
+await build({
+  env: 'development',
+  
+  // Cache Configuration
+  cache: {
+    type: 'mongodb',        // memory, mongodb, redis, postgresql, mysql
+    retention: 600000,       // 10 minutes
+    limit: 10000,
+    
+    database: {
+      uri: 'mongodb://localhost:27017',
+      database: 'triva',
+      collection: 'cache'
+    }
+  },
+  
+  // Throttle Configuration
+  throttle: {
+    limit: 100,
+    window_ms: 60000,
+    burst_limit: 20,
+    burst_window_ms: 1000,
+    ban_threshold: 5,
+    ban_ms: 300000
+  },
+  
+  // Log Retention
+  retention: {
+    enabled: true,
+    maxEntries: 10000
+  },
+  
+  // Error Tracking
+  errorTracking: {
+    enabled: true,
+    maxEntries: 5000
+  }
+});
+```
+
+## 🗄️ Database Support
+
+### Memory (Built-in)
+```javascript
+await build({
+  cache: { type: 'memory' }
+});
+```
+
+### MongoDB
+```bash
+npm install mongodb
+```
+
+```javascript
+await build({
+  cache: {
+    type: 'mongodb',
+    database: {
+      uri: 'mongodb://localhost:27017',
+      database: 'triva'
+    }
+  }
+});
+```
+
+### Redis
+```bash
+npm install redis
+```
+
+```javascript
+await build({
+  cache: {
+    type: 'redis',
+    database: {
+      host: 'localhost',
+      port: 6379
+    }
+  }
+});
+```
+
+### PostgreSQL
+```bash
+npm install pg
+```
+
+```javascript
+await build({
+  cache: {
+    type: 'postgresql',
+    database: {
+      host: 'localhost',
+      port: 5432,
+      database: 'triva',
+      user: 'postgres',
+      password: 'password'
+    }
+  }
+});
+```
+
+### MySQL
+```bash
+npm install mysql2
+```
+
+```javascript
+await build({
+  cache: {
+    type: 'mysql',
+    database: {
+      host: 'localhost',
+      port: 3306,
+      database: 'triva',
+      user: 'root',
+      password: 'password'
+    }
+  }
+});
+```
+
+**Helpful Errors:**
+```
+❌ MongoDB package not found.
+
+   Install it with: npm install mongodb
+
+   Then restart your server.
+```
+
+## 📖 Core Features
 
 ### Routing
 
 ```javascript
-import { get, post, put, delete as del, patch } from 'triva';
+import { get, post, put, delete as del } from 'triva';
 
 get('/users', (req, res) => {
   res.json({ users: [] });
+});
+
+get('/users/:id', (req, res) => {
+  const { id } = req.params;
+  res.json({ userId: id });
 });
 
 post('/users', async (req, res) => {
   const data = await req.json();
   res.json({ created: true });
 });
-
-put('/users/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({ updated: id });
-});
-
-del('/users/:id', (req, res) => {
-  res.json({ deleted: req.params.id });
-});
 ```
 
-### Route Parameters
-
-```javascript
-get('/users/:userId/posts/:postId', (req, res) => {
-  const { userId, postId } = req.params;
-  res.json({ userId, postId });
-});
-```
-
-### Query Parameters
-
-```javascript
-get('/search', (req, res) => {
-  const { q, page, limit } = req.query;
-  res.json({ query: q, page, limit });
-});
-```
-
-## 🍪 Cookies
+### Cookies
 
 ```javascript
 import { use, cookieParser } from 'triva';
 
-// Add cookie parser middleware
 use(cookieParser());
 
 get('/login', (req, res) => {
-  // Set cookie
   res.cookie('sessionId', 'abc123', {
     httpOnly: true,
-    secure: true,
-    maxAge: 3600000 // 1 hour
+    maxAge: 3600000
   });
-  
   res.json({ success: true });
 });
 
 get('/profile', (req, res) => {
-  // Read cookies
   const sessionId = req.cookies.sessionId;
   res.json({ sessionId });
 });
-
-get('/logout', (req, res) => {
-  // Clear cookie
-  res.clearCookie('sessionId');
-  res.json({ loggedOut: true });
-});
 ```
 
-## 📥 File Operations
-
-### Download Files
+### File Operations
 
 ```javascript
-get('/download/report', (req, res) => {
-  res.download('/path/to/report.pdf', 'Annual-Report.pdf');
+// Download file
+get('/download', (req, res) => {
+  res.download('/path/to/file.pdf', 'report.pdf');
+});
+
+// Send file
+get('/view', (req, res) => {
+  res.sendFile('/path/to/document.pdf');
 });
 ```
 
-### Send Files
-
-```javascript
-get('/view/document', (req, res) => {
-  res.sendFile('/path/to/document.pdf', {
-    contentType: 'application/pdf'
-  });
-});
-```
-
-## 🌐 JSONP
+### JSONP
 
 ```javascript
 get('/api/data', (req, res) => {
   res.jsonp({ users: ['Alice', 'Bob'] });
 });
-
-// Client: /api/data?callback=myFunction
 ```
 
-## 📊 Response Methods
+### Custom Middleware
 
 ```javascript
-// JSON
-res.json({ data: 'value' });
-
-// HTML (auto-detected)
-res.send('<h1>Hello</h1>');
-
-// HTML (explicit)
-res.html('<h1>Hello</h1>');
-
-// Plain text
-res.send('Hello');
-
-// Status code
-res.status(404).json({ error: 'Not found' });
-
-// Headers
-res.header('X-Custom', 'value').json({ data: 'value' });
-
-// Redirect
-res.redirect('/new-url', 301);
-```
-
-## ⚙️ Custom Middleware
-
-```javascript
-import { use } from 'triva';
-
-// Request logger
 use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
-
-// Authentication
-use((req, res, next) => {
-  const token = req.headers.authorization;
-  req.user = token ? verifyToken(token) : null;
-  next();
-});
-
-// Error handling
-use((req, res, next) => {
-  try {
-    // Your logic
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
 ```
 
-## 📝 Logging
+### Logging
 
 ```javascript
 import { log } from 'triva';
@@ -226,21 +275,14 @@ import { log } from 'triva';
 // Get logs
 const logs = await log.get({ limit: 100 });
 
+// Export logs
+await log.export('all', 'my-logs.json');
+
 // Get stats
 const stats = await log.getStats();
-
-// Search logs
-const results = await log.search('error');
-
-// Export logs to file
-await log.export('all', 'my-logs.json');
-await log.export({ limit: 100 }, 'recent-logs.json');
-
-// Clear logs
-await log.clear();
 ```
 
-## 🛡️ Error Tracking
+### Error Tracking
 
 ```javascript
 import { errorTracker } from 'triva';
@@ -248,68 +290,8 @@ import { errorTracker } from 'triva';
 // Get errors
 const errors = await errorTracker.get({ severity: 'critical' });
 
-// Get error by ID
-const error = await errorTracker.getById('err_123_abc');
-
-// Mark as resolved
-await errorTracker.resolve('err_123_abc');
-
 // Get stats
 const stats = await errorTracker.getStats();
-
-// Clear errors
-await errorTracker.clear();
-```
-
-## ⚡ Caching
-
-```javascript
-import { cache, configCache } from 'triva';
-
-// Configure cache
-configCache({
-  cache_type: 'memory',
-  cache_limit: 10000,
-  cache_retention: 600000 // 10 minutes
-});
-
-// Set cache
-await cache.set('user:123', userData, 3600000); // 1 hour TTL
-
-// Get cache
-const user = await cache.get('user:123');
-
-// Delete cache
-await cache.delete('user:123');
-
-// Clear all
-await cache.clear();
-
-// Get stats
-const stats = await cache.stats();
-```
-
-## 🔧 Error Handlers
-
-```javascript
-import { setErrorHandler, setNotFoundHandler } from 'triva';
-
-// Custom error handler
-setErrorHandler((err, req, res) => {
-  console.error(err);
-  if (!res.writableEnded) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Internal Server Error' }));
-  }
-});
-
-// Custom 404 handler
-setNotFoundHandler((req, res) => {
-  res.statusCode = 404;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ error: 'Not Found' }));
-});
 ```
 
 ## 📊 Complete Example
@@ -317,69 +299,98 @@ setNotFoundHandler((req, res) => {
 ```javascript
 import { 
   build,
-  middleware,
   use,
   get,
   post,
   listen,
   cookieParser,
-  log,
-  errorTracker
+  log
 } from 'triva';
 
-// Initialize
-build({ env: 'development' });
+// Centralized configuration
+await build({
+  env: 'production',
+  
+  cache: {
+    type: 'redis',
+    database: {
+      host: process.env.REDIS_HOST,
+      port: 6379
+    }
+  },
+  
+  throttle: {
+    limit: 100,
+    window_ms: 60000
+  },
+  
+  retention: {
+    enabled: true,
+    maxEntries: 50000
+  }
+});
 
 // Middleware
 use(cookieParser());
 
-use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-middleware({
-  retention: { enabled: true, maxEntries: 10000 },
-  throttle: { limit: 100, window_ms: 60000 }
-});
-
 // Routes
 get('/', (req, res) => {
-  res.json({ 
-    message: 'API is running',
-    cookies: req.cookies
-  });
+  res.json({ status: 'ok', cookies: req.cookies });
 });
 
-get('/users/:id', (req, res) => {
+get('/api/users/:id', (req, res) => {
   res.json({ userId: req.params.id });
 });
 
-post('/users', async (req, res) => {
+post('/api/users', async (req, res) => {
   const data = await req.json();
   res.status(201).json({ created: true, data });
 });
 
-get('/download', (req, res) => {
-  res.download('/path/to/file.pdf');
+get('/download/report', (req, res) => {
+  res.download('./reports/annual-report.pdf');
 });
 
-// Admin routes
-get('/admin/logs', async (req, res) => {
-  const logs = await log.get({ limit: 100 });
-  res.json({ logs });
-});
-
-get('/admin/errors', async (req, res) => {
-  const errors = await errorTracker.get({ limit: 50 });
-  res.json({ errors });
+get('/admin/logs/export', async (req, res) => {
+  const result = await log.export({ limit: 1000 });
+  res.json({ exported: result.count });
 });
 
 // Start server
-listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+listen(process.env.PORT || 3000, () => {
+  console.log('Server running');
 });
 ```
+
+## 📚 Documentation
+
+- [Database Configuration](docs/DATABASE-CONFIG.md)
+- [Centralized Config Example](test/centralized-config-example.js)
+- [API Reference](docs/API.md)
+
+## 🔧 Response Methods
+
+```javascript
+res.json(data)                    // Send JSON
+res.send(data)                    // Auto-detect (HTML/JSON/text)
+res.html(html)                    // Send HTML
+res.status(code)                  // Set status code
+res.header(name, value)           // Set header
+res.redirect(url, code)           // Redirect
+res.jsonp(data)                   // Send JSONP
+res.download(path, filename)      // Download file
+res.sendFile(path, options)       // Send file
+res.cookie(name, value, options)  // Set cookie
+res.clearCookie(name)             // Clear cookie
+```
+
+## ⚡ Performance
+
+- **Memory**: Fastest (built-in)
+- **Redis**: Fastest (external DB)
+- **MongoDB**: Fast (document store)
+- **PostgreSQL**: Fast (ACID compliance)
+- **MySQL**: Fast (traditional)
 
 ## 📄 License
 
@@ -391,4 +402,4 @@ Kris Powers
 
 ---
 
-Built with ❤️ using pure Node.js
+**All configuration in one place. Multiple databases. Zero hassle.** 🚀
