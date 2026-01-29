@@ -1,2 +1,13 @@
-useage.md
-/snippets
+node_modules/
+*.log
+.env
+.DS_Store
+coverage/
+.nyc_output/
+dist/
+build/
+*.tgz
+/company-demo
+/docs
+/test-project
+INSTALL.md
