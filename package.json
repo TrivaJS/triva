@@ -1,12 +1,33 @@
 {
-  "name": "server-framework",
+  "name": "triva",
   "version": "1.0.0",
-  "description": "Observability-First Server Framework",
-  "main": "./lib/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "Enterprise Node.js HTTP framework with middleware, throttling, logging, caching, error tracking, and cookie support",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT"
+  "keywords": [
+    "http",
+    "server",
+    "framework",
+    "middleware",
+    "throttle",
+    "rate-limit",
+    "logging",
+    "cache",
+    "cookies",
+    "error-tracking"
+  ],
+  "author": "Kris Powers",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "lib/",
+    "README.md",
+    "LICENSE",
+    "index.d.ts"
+  ]
 }
