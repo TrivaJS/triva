@@ -37,12 +37,12 @@ import { build, get, listen } from 'triva';
 // All configuration in one place!
 await build({
   env: 'development',
-  
+
   cache: {
     type: 'memory',
     retention: 600000
   },
-  
+
   throttle: {
     limit: 100,
     window_ms: 60000
@@ -63,20 +63,20 @@ Everything is configured in `build()`:
 ```javascript
 await build({
   env: 'development',
-  
+
   // Cache Configuration
   cache: {
     type: 'mongodb',        // memory, mongodb, redis, postgresql, mysql
     retention: 600000,       // 10 minutes
     limit: 10000,
-    
+
     database: {
       uri: 'mongodb://localhost:27017',
       database: 'triva',
       collection: 'cache'
     }
   },
-  
+
   // Throttle Configuration
   throttle: {
     limit: 100,
@@ -86,13 +86,13 @@ await build({
     ban_threshold: 5,
     ban_ms: 300000
   },
-  
+
   // Log Retention
   retention: {
     enabled: true,
     maxEntries: 10000
   },
-  
+
   // Error Tracking
   errorTracking: {
     enabled: true,
@@ -297,7 +297,7 @@ const stats = await errorTracker.getStats();
 ## 📊 Complete Example
 
 ```javascript
-import { 
+import {
   build,
   use,
   get,
@@ -310,7 +310,7 @@ import {
 // Centralized configuration
 await build({
   env: 'production',
-  
+
   cache: {
     type: 'redis',
     database: {
@@ -318,12 +318,12 @@ await build({
       port: 6379
     }
   },
-  
+
   throttle: {
     limit: 100,
     window_ms: 60000
   },
-  
+
   retention: {
     enabled: true,
     maxEntries: 50000
@@ -395,11 +395,3 @@ res.clearCookie(name)             // Clear cookie
 ## 📄 License
 
 MIT
-
-## 👨‍💻 Author
-
-Kris Powers
-
----
-
-**All configuration in one place. Multiple databases. Zero hassle.** 🚀
