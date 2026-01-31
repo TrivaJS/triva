@@ -1,6 +1,8 @@
-# Triva
-
 <p align="center">
+
+  <p align="center">
+    <img style="border-radius: 10px; width: 120px; height 120px;" src=".github/assets/triva-logo.png" >
+  </P>
 
   <h1 align="center">Triva</h1>
 
