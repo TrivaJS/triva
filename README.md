@@ -17,11 +17,11 @@
 > [!IMPORTANT]
 > **v0.3.0 - Pre Release**
 >
-> This release is intended solely for the continued development & testing of Triva & its capabilities. Expect rapid updates containing bug fixes, feature reworks, & framekwork optimization going forward, until the official release of v1.0.0 and onward.
+> This release is intended solely for the **continued development & testing of Triva & its capabilities.** Expect **rapid updates containing bug fixes, feature reworks, & framekwork optimization** going forward, until the official release of v1.0.0 and onward.
 >
-> During the Pre-release phase, a wide range of efforts to build a user-friendly documentation interface will also be in the works. Until the release of that interface, it's recommended that developers testing Triva refer to the sage found below.
+> During the **Pre-release** phase, a wide range of efforts to build a **user-friendly documentation interface** will also be in the works. Until the release of that interface, it's recommended that developers testing Triva refer to the docs found below.
 >
-> If you're looking to contribute in any capacity, please feel free to submit a pull request or issue ticket for review.
+>**If you're looking to contribute in any capacity, please feel free to submit a pull request or issue ticket for review.**
 >
 >
 
