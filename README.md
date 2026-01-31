@@ -1,6 +1,29 @@
 # Triva
 
-Enterprise-grade Node.js HTTP framework with centralized configuration, database adapters, advanced middleware, and complete developer visibility.
+<p align="center">
+
+  <h1 align="center">Triva</h1>
+
+  <p align="center">
+    A Node.js HTTP Server Framework built for enterprises
+  </p>
+
+  <p align="center">
+    Triva is an enterprise-grade Node.js HTTP framework with centralized configuration, database adapters, advanced middleware, and complete developer visibility.
+  </p>
+
+</p>
+
+> [!IMPORTANT]
+> **v0.3.0 - Pre Release**
+>
+> This release is intended solely for the continued development & testing of Triva & its capabilities. Expect rapid updates containing bug fixes, feature reworks, & framekwork optimization going forward, until the official release of v1.0.0 and onward.
+>
+> During the Pre-release phase, a wide range of efforts to build a user-friendly documentation interface will also be in the works. Until the release of that interface, it's recommended that developers testing Triva refer to the sage found below.
+>
+> If you're looking to contribute in any capacity, please feel free to submit a pull request or issue ticket for review.
+>
+>
 
 ## ✨ Features
 
@@ -361,12 +384,6 @@ listen(process.env.PORT || 3000, () => {
   console.log('Server running');
 });
 ```
-
-## 📚 Documentation
-
-- [Database Configuration](docs/DATABASE-CONFIG.md)
-- [Centralized Config Example](test/centralized-config-example.js)
-- [API Reference](docs/API.md)
 
 ## 🔧 Response Methods
 
