@@ -7,3 +7,6 @@ INSTALL.md
 /local_tools
 /cli
 /dist
+.github/media.md
+.github/todo.md
+/script
