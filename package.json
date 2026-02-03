@@ -1,11 +1,24 @@
 {
   "name": "triva",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Enterprise Node.js HTTP framework with middleware, throttling, logging, caching, error tracking, and cookie support",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js"
+  },
+  "scripts": {
+    "test": "node scripts/test.js",
+    "test:unit": "node scripts/test.js unit",
+    "test:integration": "node scripts/test.js integration",
+    "docs": "node scripts/generate-docs.js",
+    "release": "node scripts/release.js",
+    "migrate": "node scripts/migrate.js",
+    "example:basic": "node test/examples/basic.js",
+    "example:mongodb": "node test/examples/mongodb.js",
+    "example:redis": "node test/examples/redis.js",
+    "example:postgresql": "node test/examples/postgresql.js",
+    "example:enterprise": "node test/examples/enterprise.js"
   },
   "keywords": [
     "http",

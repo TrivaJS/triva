@@ -1,12 +1,7 @@
 node_modules/
-test/
-scripts/
 dev-testing/
 INSTALL.md
 /.docs
 /local_tools
-/cli
-/dist
 .github/media.md
 .github/todo.md
-/script
