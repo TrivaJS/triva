@@ -1,0 +1,46 @@
+{
+  "name": "@trivajs/cors",
+  "version": "1.0.0",
+  "description": "CORS middleware for Triva framework - handles Cross-Origin Resource Sharing with full configuration",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "scripts": {
+    "test": "node test/cors.test.js",
+    "example": "node test/example.js"
+  },
+  "keywords": [
+    "triva",
+    "trivajs",
+    "cors",
+    "middleware",
+    "cross-origin",
+    "http",
+    "security"
+  ],
+  "author": "Kris Powers",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "triva": "^1.0.0"
+  },
+  "files": [
+    "lib/",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/triva.git",
+    "directory": "extensions/cors"
+  }
+}

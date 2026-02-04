@@ -1,0 +1,4 @@
+test/
+.git/
+.gitignore
+*.test.js
