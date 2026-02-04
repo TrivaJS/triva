@@ -4,8 +4,10 @@
   "description": "Enterprise Node.js HTTP framework with middleware, throttling, logging, caching, error tracking, and cookie support",
   "type": "module",
   "main": "lib/index.js",
+  "types": "./index.d.ts",
   "exports": {
-    ".": "./lib/index.js"
+    "default": "./lib/index.js",
+    "types": "./index.d.ts"
   },
   "scripts": {
     "test": "node scripts/test.js",

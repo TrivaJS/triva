@@ -1,0 +1,42 @@
+{
+  "name": "@trivajs/cli",
+  "version": "1.0.0",
+  "description": "Command-line interface for managing Triva applications - logs, errors, cache, and more",
+  "type": "module",
+  "main": "lib/command.js",
+  "bin": {
+    "triva": "./bin/triva.js"
+  },
+  "scripts": {
+    "test": "node test/cli.test.js"
+  },
+  "keywords": [
+    "triva",
+    "trivajs",
+    "cli",
+    "command-line",
+    "logs",
+    "errors",
+    "cache",
+    "management"
+  ],
+  "author": "Kris Powers",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "triva": "^1.0.0"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrivaJS/triva",
+    "directory": "extensions/cli"
+  }
+}

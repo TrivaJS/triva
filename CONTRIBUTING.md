@@ -137,11 +137,11 @@ describe('Cache Module', () => {
       // Arrange
       const key = 'test:string';
       const value = 'hello world';
-      
+
       // Act
       await cache.set(key, value);
       const result = await cache.get(key);
-      
+
       // Assert
       assert.strictEqual(result, value);
     });
@@ -243,12 +243,12 @@ Example JSDoc:
 ```javascript
 /**
  * Set a value in the cache
- * 
+ *
  * @param {string} key - The cache key
  * @param {any} value - The value to cache
  * @param {number} [ttl] - Time to live in milliseconds
  * @returns {Promise<void>}
- * 
+ *
  * @example
  * await cache.set('user:123', { name: 'John' }, 3600000);
  */
@@ -259,9 +259,8 @@ async function set(key, value, ttl) {
 
 ## Additional Resources
 
-- [Issue Tracker](https://github.com/yourusername/triva/issues)
-- [Discussions](https://github.com/yourusername/triva/discussions)
-- [Documentation](https://github.com/yourusername/triva/docs)
+- [Issue Tracker](https://github.com/TrivaJS/triva/issues)
+- [Discussions](https://github.com/orgs/TrivaJS/discussions)
 
 ## Questions?
 
