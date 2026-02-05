@@ -1,14 +1,10 @@
 <p align="center">
 
   <p align="center">
-    <img style="border-radius: 10px; width: 120px; height 120px;" src="https://triva.pages.dev/triva-logo.png" >
+    <img src="https://triva.pages.dev/header-logo.jpg" >
   </P>
 
-  <h1 align="center">Triva</h1>
-
-  <p align="center">
-    A Node.js HTTP Server Framework built for enterprises
-  </p>
+  ----
 
   <p align="center">
     Triva is an enterprise-grade Node.js HTTP framework with centralized configuration, database adapters, advanced middleware, and complete developer visibility.

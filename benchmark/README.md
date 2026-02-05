@@ -224,5 +224,3 @@ Run benchmarks:
 - After major changes
 - On different environments
 - Under different loads
-
-Track trends over time to catch performance regressions early!

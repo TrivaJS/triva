@@ -1,0 +1,359 @@
+{
+  "Triva: Build Server": {
+    "prefix": "triva-build",
+    "body": [
+      "import { build } from 'triva';",
+      "",
+      "await build({",
+      "  cache: {",
+      "    type: '${1|memory,mongodb,redis,postgresql,mysql|}',",
+      "    retention: ${2:3600000}",
+      "  },",
+      "  throttle: {",
+      "    limit: ${3:100},",
+      "    window_ms: ${4:60000}",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Build and configure Triva server"
+  },
+  "Triva: Basic Server": {
+    "prefix": "triva-server",
+    "body": [
+      "import { build, get, post, listen } from 'triva';",
+      "",
+      "await build({",
+      "  cache: { type: 'memory' }",
+      "});",
+      "",
+      "get('/${1:route}', (req, res) => {",
+      "  res.json({ ${2:message: 'Hello'} });",
+      "});",
+      "",
+      "listen(${3:3000});",
+      "$0"
+    ],
+    "description": "Create basic Triva server"
+  },
+  "Triva: GET Route": {
+    "prefix": "triva-get",
+    "body": [
+      "get('/${1:path}', (req, res) => {",
+      "  ${2:// Handle request}",
+      "  res.json({ ${3:data: 'response'} });",
+      "});",
+      "$0"
+    ],
+    "description": "Create GET route"
+  },
+  "Triva: POST Route": {
+    "prefix": "triva-post",
+    "body": [
+      "post('/${1:path}', async (req, res) => {",
+      "  const body = await req.json();",
+      "  ${2:// Process body}",
+      "  res.status(201).json({ ${3:created: true} });",
+      "});",
+      "$0"
+    ],
+    "description": "Create POST route with body parsing"
+  },
+  "Triva: PUT Route": {
+    "prefix": "triva-put",
+    "body": [
+      "put('/${1:path}/:${2:id}', async (req, res) => {",
+      "  const { ${2:id} } = req.params;",
+      "  const body = await req.json();",
+      "  ${3:// Update resource}",
+      "  res.json({ ${4:updated: true} });",
+      "});",
+      "$0"
+    ],
+    "description": "Create PUT route with params"
+  },
+  "Triva: DELETE Route": {
+    "prefix": "triva-del",
+    "body": [
+      "del('/${1:path}/:${2:id}', (req, res) => {",
+      "  const { ${2:id} } = req.params;",
+      "  ${3:// Delete resource}",
+      "  res.json({ ${4:deleted: true} });",
+      "});",
+      "$0"
+    ],
+    "description": "Create DELETE route"
+  },
+  "Triva: Middleware": {
+    "prefix": "triva-middleware",
+    "body": [
+      "use((req, res, next) => {",
+      "  ${1:// Middleware logic}",
+      "  next();",
+      "});",
+      "$0"
+    ],
+    "description": "Create middleware function"
+  },
+  "Triva: Cache Get": {
+    "prefix": "triva-cache-get",
+    "body": [
+      "const cached = await cache.get('${1:key}');",
+      "if (cached) {",
+      "  return res.json({ source: 'cache', data: cached });",
+      "}",
+      "$0"
+    ],
+    "description": "Get value from cache"
+  },
+  "Triva: Cache Set": {
+    "prefix": "triva-cache-set",
+    "body": [
+      "await cache.set('${1:key}', ${2:value}, ${3:3600000});",
+      "$0"
+    ],
+    "description": "Set value in cache with TTL"
+  },
+  "Triva: Cache Pattern": {
+    "prefix": "triva-cache-pattern",
+    "body": [
+      "const cacheKey = '${1:prefix}:${2:${3:id}}';",
+      "",
+      "const cached = await cache.get(cacheKey);",
+      "if (cached) {",
+      "  return res.json({ source: 'cache', data: cached });",
+      "}",
+      "",
+      "const data = ${4:// fetch data};",
+      "await cache.set(cacheKey, data, ${5:3600000});",
+      "",
+      "res.json({ source: 'database', data });",
+      "$0"
+    ],
+    "description": "Cache pattern with get/set"
+  },
+  "Triva: MongoDB Config": {
+    "prefix": "triva-mongodb",
+    "body": [
+      "await build({",
+      "  cache: {",
+      "    type: 'mongodb',",
+      "    retention: ${1:3600000},",
+      "    database: {",
+      "      uri: process.env.MONGODB_URI || '${2:mongodb://localhost:27017}',",
+      "      database: '${3:triva_cache}',",
+      "      collection: '${4:cache_entries}'",
+      "    }",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Configure MongoDB cache"
+  },
+  "Triva: Redis Config": {
+    "prefix": "triva-redis",
+    "body": [
+      "await build({",
+      "  cache: {",
+      "    type: 'redis',",
+      "    retention: ${1:7200000},",
+      "    database: {",
+      "      host: process.env.REDIS_HOST || '${2:localhost}',",
+      "      port: parseInt(process.env.REDIS_PORT || '${3:6379}'),",
+      "      password: process.env.REDIS_PASSWORD",
+      "    }",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Configure Redis cache"
+  },
+  "Triva: PostgreSQL Config": {
+    "prefix": "triva-postgres",
+    "body": [
+      "await build({",
+      "  cache: {",
+      "    type: 'postgresql',",
+      "    retention: ${1:7200000},",
+      "    database: {",
+      "      host: process.env.PG_HOST || '${2:localhost}',",
+      "      port: parseInt(process.env.PG_PORT || '${3:5432}'),",
+      "      database: process.env.PG_DATABASE || '${4:triva}',",
+      "      user: process.env.PG_USER || '${5:postgres}',",
+      "      password: process.env.PG_PASSWORD",
+      "    }",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Configure PostgreSQL cache"
+  },
+  "Triva: Error Tracking": {
+    "prefix": "triva-errors",
+    "body": [
+      "await build({",
+      "  errorTracking: {",
+      "    enabled: true,",
+      "    maxEntries: ${1:25000}",
+      "  }",
+      "});",
+      "",
+      "// Get errors",
+      "const errors = await errorTracker.get({",
+      "  limit: ${2:100},",
+      "  severity: '${3|error,warn,info|}',",
+      "  resolved: ${4:false}",
+      "});",
+      "$0"
+    ],
+    "description": "Configure error tracking"
+  },
+  "Triva: Request Logging": {
+    "prefix": "triva-logging",
+    "body": [
+      "await build({",
+      "  retention: {",
+      "    enabled: true,",
+      "    maxEntries: ${1:100000}",
+      "  }",
+      "});",
+      "",
+      "// Get logs",
+      "const logs = await log.get({ limit: ${2:100} });",
+      "",
+      "// Export logs",
+      "const result = await log.export({",
+      "  limit: ${3:1000},",
+      "  severity: '${4|info,warn,error|}' ",
+      "});",
+      "$0"
+    ],
+    "description": "Configure request logging"
+  },
+  "Triva: Rate Limiting": {
+    "prefix": "triva-throttle",
+    "body": [
+      "await build({",
+      "  throttle: {",
+      "    limit: ${1:100},",
+      "    window_ms: ${2:60000},",
+      "    burst_limit: ${3:50},",
+      "    ban_threshold: ${4:5},",
+      "    ban_duration_ms: ${5:3600000}",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Configure rate limiting"
+  },
+  "Triva: Throttle Policy": {
+    "prefix": "triva-throttle-policy",
+    "body": [
+      "await build({",
+      "  throttle: {",
+      "    limit: ${1:100},",
+      "    window_ms: ${2:60000},",
+      "    policies: ({ context }) => {",
+      "      if (context.pathname?.startsWith('${3:/api/admin}')) {",
+      "        return { limit: ${4:50} };",
+      "      }",
+      "      if (context.pathname?.startsWith('${5:/api/public}')) {",
+      "        return { limit: ${6:1000} };",
+      "      }",
+      "    }",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Rate limiting with policies"
+  },
+  "Triva: Cookie Parser": {
+    "prefix": "triva-cookies",
+    "body": [
+      "import { cookieParser } from 'triva';",
+      "",
+      "use(cookieParser());",
+      "",
+      "get('/${1:route}', (req, res) => {",
+      "  // Access cookies",
+      "  const ${2:token} = req.cookies.${2:token};",
+      "  ",
+      "  // Set cookie",
+      "  res.cookie('${3:name}', '${4:value}', {",
+      "    httpOnly: true,",
+      "    secure: true,",
+      "    maxAge: ${5:86400000}",
+      "  });",
+      "  ",
+      "  res.json({ ok: true });",
+      "});",
+      "$0"
+    ],
+    "description": "Use cookie parser middleware"
+  },
+  "Triva: CORS Middleware": {
+    "prefix": "triva-cors",
+    "body": [
+      "import { cors } from '@trivajs/cors';",
+      "",
+      "use(cors({",
+      "  origin: '${1:https://example.com}',",
+      "  credentials: ${2:true},",
+      "  methods: [${3:'GET', 'POST', 'PUT', 'DELETE'}],",
+      "  allowedHeaders: [${4:'Content-Type', 'Authorization'}]",
+      "}));",
+      "$0"
+    ],
+    "description": "Add CORS middleware"
+  },
+  "Triva: Full Config": {
+    "prefix": "triva-config",
+    "body": [
+      "await build({",
+      "  env: '${1|development,production,test|}',",
+      "  ",
+      "  cache: {",
+      "    type: '${2|memory,mongodb,redis,postgresql,mysql|}',",
+      "    retention: ${3:3600000}",
+      "  },",
+      "  ",
+      "  throttle: {",
+      "    limit: ${4:100},",
+      "    window_ms: ${5:60000},",
+      "    burst_limit: ${6:50},",
+      "    ban_threshold: ${7:5}",
+      "  },",
+      "  ",
+      "  retention: {",
+      "    enabled: ${8:true},",
+      "    maxEntries: ${9:100000}",
+      "  },",
+      "  ",
+      "  errorTracking: {",
+      "    enabled: ${10:true},",
+      "    maxEntries: ${11:25000}",
+      "  }",
+      "});",
+      "$0"
+    ],
+    "description": "Full Triva configuration"
+  },
+  "Triva: Route with Auth": {
+    "prefix": "triva-auth",
+    "body": [
+      "get('/${1:protected}', (req, res) => {",
+      "  const token = req.cookies.${2:auth_token} || req.headers.authorization;",
+      "  ",
+      "  if (!token) {",
+      "    return res.status(401).json({ error: 'Unauthorized' });",
+      "  }",
+      "  ",
+      "  ${3:// Verify token}",
+      "  ",
+      "  res.json({ ${4:data: 'protected'} });",
+      "});",
+      "$0"
+    ],
+    "description": "Protected route with authentication"
+  }
+}
