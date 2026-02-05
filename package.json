@@ -1,13 +1,13 @@
 {
   "name": "triva",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Enterprise Node.js HTTP framework with middleware, throttling, logging, caching, error tracking, and cookie support",
   "type": "module",
   "main": "lib/index.js",
-  "types": "./index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     "default": "./lib/index.js",
-    "types": "./index.d.ts"
+    "types": "./types/index.d.ts"
   },
   "scripts": {
     "test": "node scripts/test.js",
@@ -50,6 +50,6 @@
     "lib/",
     "README.md",
     "LICENSE",
-    "index.d.ts"
+    "types/"
   ]
 }
