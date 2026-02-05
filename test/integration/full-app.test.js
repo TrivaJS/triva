@@ -19,11 +19,8 @@ const tests = {
       cache: {
         type: 'memory',
         retention: 60000
-      },
-      throttle: {
-        limit: 1000,
-        window_ms: 60000
       }
+      // No throttle config = no throttle middleware
     });
 
     // Set up test routes

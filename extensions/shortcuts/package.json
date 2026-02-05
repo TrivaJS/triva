@@ -1,0 +1,38 @@
+{
+  "name": "@trivajs/shortcuts",
+  "version": "1.0.0",
+  "description": "IDE snippets/shortcuts for Triva framework - auto-installs to VS Code, VS Code Insiders, and Atom",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "postinstall": "node bin/install.js",
+    "preuninstall": "node bin/install.js",
+    "test": "node test/shortcuts.test.js"
+  },
+  "keywords": [
+    "triva",
+    "trivajs",
+    "snippets",
+    "shortcuts",
+    "vscode",
+    "atom",
+    "ide",
+    "productivity"
+  ],
+  "author": "Kris Powers",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/triva.git",
+    "directory": "extensions/shortcuts"
+  }
+}
