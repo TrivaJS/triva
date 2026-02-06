@@ -37,6 +37,7 @@ jobs:
 
       - name: Run main benchmarks
         continue-on-error: true
+        timeout-minutes: 10
         run: |
           npm run benchmark:cache 2>&1 > main-cache.log
           npm run benchmark:routing 2>&1 > main-routing.log
@@ -56,6 +57,7 @@ jobs:
 
       - name: Run PR benchmarks
         continue-on-error: true
+        timeout-minutes: 10
         run: |
           npm run benchmark:cache 2>&1 > pr-cache.log
           npm run benchmark:routing 2>&1 > pr-routing.log

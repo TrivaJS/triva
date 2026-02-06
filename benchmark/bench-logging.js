@@ -1,6 +1,5 @@
 
 import { performance } from 'perf_hooks';
-import { build } from '../lib/index.js';
 
 class BenchmarkRunner {
   constructor() {
@@ -49,13 +48,14 @@ class BenchmarkRunner {
     console.log(`   Avg: ${r.avg} | P50: ${r.p50} | P95: ${r.p95} | P99: ${r.p99}`);
     console.log(`   Min: ${r.min} | Max: ${r.max}`);
     console.log(`   Throughput: ${r.opsPerSec}`);
-    console.log(`   Memory: ${r.memoryDelta}\n`);
+    console.log(`   Memory: ${r.memoryDelta}
+`);
   }
 
   printSummary() {
-    console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+    console.log('\n' + '='.repeat(70) + '\n📈 Benchmark Summary\n');
     this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-    console.log(`\n${'='.repeat(70)}\n`);
+    console.log('\n' + '='.repeat(70) + '\n');
   }
 }
 

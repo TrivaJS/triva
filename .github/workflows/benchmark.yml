@@ -29,26 +29,32 @@ jobs:
 
       - name: Run cache benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:cache 2>&1 | tee cache.log
 
       - name: Run routing benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:routing 2>&1 | tee routing.log
 
       - name: Run middleware benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:middleware 2>&1 | tee middleware.log
 
       - name: Run throttle benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:throttle 2>&1 | tee throttle.log
 
       - name: Run logging benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:logging 2>&1 | tee logging.log
 
       - name: Run HTTP benchmarks
         continue-on-error: true
+        timeout-minutes: 5
         run: npm run benchmark:http 2>&1 | tee http.log
 
       # Emit annotations (always run)
