@@ -24,7 +24,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # ----------------------------
       # MAIN BRANCH BENCHMARKS
@@ -33,7 +33,7 @@ jobs:
         run: git checkout origin/main
 
       - name: Install dependencies (main)
-        run: npm ci
+        run: npm install
 
       - name: Run main benchmarks
         continue-on-error: true
@@ -52,7 +52,7 @@ jobs:
         run: git checkout ${{ github.event.pull_request.head.sha }}
 
       - name: Install dependencies (PR)
-        run: npm ci
+        run: npm install
 
       - name: Run PR benchmarks
         continue-on-error: true
