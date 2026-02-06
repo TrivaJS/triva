@@ -1,0 +1,241 @@
+name: Benchmark Comparison
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ----------------------------
+      # MAIN BRANCH BENCHMARKS
+      # ----------------------------
+      - name: Checkout main branch
+        run: git checkout origin/main
+
+      - name: Install dependencies (main)
+        run: npm ci
+
+      - name: Run main benchmarks
+        continue-on-error: true
+        run: |
+          npm run benchmark:cache 2>&1 > main-cache.log
+          npm run benchmark:routing 2>&1 > main-routing.log
+          npm run benchmark:middleware 2>&1 > main-middleware.log
+          npm run benchmark:throttle 2>&1 > main-throttle.log
+          npm run benchmark:logging 2>&1 > main-logging.log
+          npm run benchmark:http 2>&1 > main-http.log
+
+      # ----------------------------
+      # PR BRANCH BENCHMARKS
+      # ----------------------------
+      - name: Checkout PR branch
+        run: git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Install dependencies (PR)
+        run: npm ci
+
+      - name: Run PR benchmarks
+        continue-on-error: true
+        run: |
+          npm run benchmark:cache 2>&1 > pr-cache.log
+          npm run benchmark:routing 2>&1 > pr-routing.log
+          npm run benchmark:middleware 2>&1 > pr-middleware.log
+          npm run benchmark:throttle 2>&1 > pr-throttle.log
+          npm run benchmark:logging 2>&1 > pr-logging.log
+          npm run benchmark:http 2>&1 > pr-http.log
+
+      # ----------------------------
+      # COMPARE & ANALYZE
+      # ----------------------------
+      - name: Compare benchmarks
+        id: compare
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+
+          const benchmarks = ['cache', 'routing', 'middleware', 'throttle', 'logging', 'http'];
+          let summary = [];
+          let hasRegressions = false;
+
+          // Extract average ops/sec from benchmark output
+          function extractOpsPerSec(text) {
+            // Match patterns like: "42,735 ops/sec" or "Throughput: 42,735 ops/sec"
+            const matches = text.match(/(\d{1,3}(?:,\d{3})*)\s*ops\/sec/gi);
+            if (!matches || matches.length === 0) return null;
+            
+            // Get all numbers and average them (some benchmarks have multiple results)
+            const numbers = matches.map(m => {
+              const num = m.match(/(\d{1,3}(?:,\d{3})*)/)[1].replace(/,/g, '');
+              return parseFloat(num);
+            });
+            
+            return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+          }
+
+          // Extract average response time from benchmark output
+          function extractAvgTime(text) {
+            // Match patterns like: "Avg: 0.0234ms"
+            const match = text.match(/Avg:\s*([\d.]+)ms/i);
+            return match ? parseFloat(match[1]) : null;
+          }
+
+          for (const bench of benchmarks) {
+            let mainData, prData, delta;
+            
+            try {
+              const mainText = fs.readFileSync(`main-${bench}.log`, 'utf8');
+              const prText = fs.readFileSync(`pr-${bench}.log`, 'utf8');
+              
+              const mainOps = extractOpsPerSec(mainText);
+              const prOps = extractOpsPerSec(prText);
+              
+              if (mainOps && prOps) {
+                delta = ((prOps - mainOps) / mainOps) * 100;
+                mainData = mainOps.toLocaleString() + ' ops/sec';
+                prData = prOps.toLocaleString() + ' ops/sec';
+              } else {
+                // Try time-based comparison
+                const mainTime = extractAvgTime(mainText);
+                const prTime = extractAvgTime(prText);
+                
+                if (mainTime && prTime) {
+                  delta = ((mainTime - prTime) / mainTime) * 100; // Lower is better
+                  mainData = mainTime.toFixed(4) + 'ms';
+                  prData = prTime.toFixed(4) + 'ms';
+                } else {
+                  console.log(`⚠️ ${bench}: Could not extract metrics`);
+                  continue;
+                }
+              }
+              
+              const icon = delta > 5 ? '🚀' : delta < -5 ? '⚠️' : '➡️';
+              const status = delta > 5 ? 'improvement' : delta < -5 ? 'regression' : 'no change';
+              
+              console.log(`${icon} ${bench}: ${delta > 0 ? '+' : ''}${delta.toFixed(2)}% (${status})`);
+              
+              if (delta < -5) {
+                console.log(`::warning::${bench} performance regression: ${delta.toFixed(2)}%`);
+                hasRegressions = true;
+              } else if (delta > 5) {
+                console.log(`::notice::${bench} performance improvement: +${delta.toFixed(2)}%`);
+              }
+              
+              summary.push({
+                name: bench,
+                main: mainData,
+                pr: prData,
+                delta: delta.toFixed(2) + '%',
+                icon
+              });
+              
+            } catch (e) {
+              console.log(`❌ ${bench}: Error reading files - ${e.message}`);
+            }
+          }
+
+          // Write summary for PR comment
+          fs.writeFileSync('summary.json', JSON.stringify(summary, null, 2));
+          fs.writeFileSync('has-regressions.txt', hasRegressions ? 'true' : 'false');
+          
+          process.exit(0);
+          EOF
+
+      # ----------------------------
+      # PR COMMENT
+      # ----------------------------
+      - name: Comment comparison on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let summary = [];
+            let hasRegressions = false;
+            
+            try {
+              summary = JSON.parse(fs.readFileSync('summary.json', 'utf8'));
+              hasRegressions = fs.readFileSync('has-regressions.txt', 'utf8') === 'true';
+            } catch (e) {
+              console.log('Could not read comparison results');
+            }
+            
+            let body = `## 📊 Benchmark Comparison: PR vs Main\n\n`;
+            
+            if (summary.length === 0) {
+              body += '⚠️ No benchmark comparisons available\n\n';
+            } else {
+              body += '| Benchmark | Main | PR | Change |\n';
+              body += '|-----------|------|----|---------|\n';
+              
+              for (const item of summary) {
+                body += `| ${item.icon} ${item.name} | ${item.main} | ${item.pr} | ${item.delta} |\n`;
+              }
+              
+              body += '\n';
+              
+              if (hasRegressions) {
+                body += '### ⚠️ Performance Regressions Detected\n\n';
+                body += 'Some benchmarks show >5% performance degradation. Please review.\n\n';
+              }
+              
+              body += '**Legend:**\n';
+              body += '- 🚀 Improvement (>5%)\n';
+              body += '- ➡️ No significant change (-5% to +5%)\n';
+              body += '- ⚠️ Regression (<-5%)\n\n';
+            }
+            
+            body += '---\n*Comparison run on Ubuntu Latest with Node.js 20*';
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      # ----------------------------
+      # UPLOAD ARTIFACTS
+      # ----------------------------
+      - name: Upload comparison artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-comparison
+          path: |
+            main-*.log
+            pr-*.log
+            summary.json
+          retention-days: 30
+
+      # ----------------------------
+      # FAIL IF REGRESSIONS
+      # ----------------------------
+      - name: Check for regressions
+        if: always()
+        run: |
+          if [ -f has-regressions.txt ] && [ "$(cat has-regressions.txt)" = "true" ]; then
+            echo "::error::Performance regressions detected!"
+            exit 1
+          fi

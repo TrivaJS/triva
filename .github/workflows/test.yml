@@ -1,0 +1,119 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        id: unit
+        continue-on-error: true
+        run: |
+          npm run test:unit 2>&1 | tee unit.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Run integration tests
+        id: integration
+        continue-on-error: true
+        run: |
+          npm run test:integration 2>&1 | tee integration.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      # Emit annotations (always run)
+      - name: Emit test annotations
+        if: always()
+        run: |
+          if [ "${{ steps.unit.outputs.exit_code }}" != "0" ]; then
+            echo "::error::Unit tests failed"
+          else
+            echo "::notice::Unit tests passed"
+          fi
+
+          if [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
+            echo "::error::Integration tests failed"
+          else
+            echo "::notice::Integration tests passed"
+          fi
+
+      # Comment on PR (only for pull requests)
+      - name: Comment test results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let unitOutput = '';
+            let integrationOutput = '';
+
+            try {
+              unitOutput = fs.readFileSync('unit.log', 'utf8');
+            } catch (e) {
+              unitOutput = 'No unit test output found';
+            }
+
+            try {
+              integrationOutput = fs.readFileSync('integration.log', 'utf8');
+            } catch (e) {
+              integrationOutput = 'No integration test output found';
+            }
+
+            const unitPassed = !unitOutput.includes('failed') && unitOutput.includes('passed');
+            const integrationPassed = !integrationOutput.includes('failed') && integrationOutput.includes('passed');
+
+            const unitIcon = unitPassed ? '✅' : '❌';
+            const integrationIcon = integrationPassed ? '✅' : '❌';
+
+            const body = `## 🧪 Test Results
+
+            ### ${unitIcon} Unit Tests
+            \`\`\`
+            ${unitOutput.slice(-30000)}
+            \`\`\`
+
+            ### ${integrationIcon} Integration Tests
+            \`\`\`
+            ${integrationOutput.slice(-30000)}
+            \`\`\`
+
+            ---
+            **Status**: ${unitPassed && integrationPassed ? '✅ All tests passed' : '❌ Some tests failed'}
+            `;
+
+                        github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.issue.number,
+                          body
+                        });
+
+                  # Fail the job if tests failed
+                  - name: Check test results
+                    if: always()
+                    run: |
+                      if [ "${{ steps.unit.outputs.exit_code }}" != "0" ] || [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
+                        echo "Tests failed!"
+                        exit 1
+                      fi
