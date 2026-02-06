@@ -1,9 +1,3 @@
-/db-overview ./db-overview.jpg 200
-/features ./features.png 200
-/header-web ./header-web.png 200
-/header ./header.jpg 200
-/logo ./logo.png 200
-
 /header-logo.jpg https://github.trivajs.com/header.jpg 302
 /triva-header.jpg https://github.trivajs.com/header-web.png 302
 /triva-logo.png https://github.trivajs.com/logo.png 302
