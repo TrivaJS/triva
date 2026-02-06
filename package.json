@@ -1,6 +1,6 @@
 {
   "name": "triva",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Enterprise Node.js HTTP framework with middleware, throttling, logging, caching, error tracking, and cookie support",
   "type": "module",
   "main": "lib/index.js",

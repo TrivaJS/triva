@@ -1,0 +1,16 @@
+[submodule "submodules/ua-parser"]
+	path = submodules/ua-parser
+	url = https://github.com/TrivaJS/ua-parser
+[submodule "submodules/cache"]
+	path = submodules/cache
+	url = https://github.com/TrivaJS/cache
+[submodule "extensions/cli"]
+	path = submodules/cli
+	url = https://github.com/TrivaJS/cli
+[submodule "extensions/cors"]
+	path = submodules/cors
+	url = https://github.com/TrivaJS/cors
+[submodule "extensions/shortcuts"]
+	path = submodules/shortcuts
+	url = https://github.com/TrivaJS/shortcuts
+
