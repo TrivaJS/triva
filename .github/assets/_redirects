@@ -1,10 +1,11 @@
-/db-overview.jpg ./db-overview.jpg
-/features.png ./features.png
-/header-web.png ./header-web.png
-/header.jpg ./header.jpg
-/logo.png ./logo.png
-/header-logo.jpg https://github.trivajs.com/header.jpg
-/triva-header.jpg https://github.trivajs.com/header-web.png
-/triva-logo.png https://github.trivajs.com/logo.png
+/db-overview ./db-overview.jpg 200
+/features ./features.png 200
+/header-web ./header-web.png 200
+/header ./header.jpg 200
+/logo ./logo.png 200
+
+/header-logo.jpg https://github.trivajs.com/header.jpg 302
+/triva-header.jpg https://github.trivajs.com/header-web.png 302
+/triva-logo.png https://github.trivajs.com/logo.png 302
 
 /* https://github.com/TrivaJS 302
