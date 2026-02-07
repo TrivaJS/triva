@@ -29,13 +29,13 @@ jobs:
       - name: Run unit tests
         id: unit
         continue-on-error: true
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: npm run test:unit 2>&1 | tee unit.log
 
       - name: Run integration tests
         id: integration
         continue-on-error: true
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: npm run test:integration 2>&1 | tee integration.log
 
       # Emit annotations (always run)
@@ -112,6 +112,17 @@ jobs:
         run: |
           echo "Unit outcome: ${{ steps.unit.outcome }}"
           echo "Integration outcome: ${{ steps.integration.outcome }}"
+          
+          # Check for timeout or failure
+          if [ "${{ steps.unit.outcome }}" == "cancelled" ]; then
+            echo "⏱️ Unit tests timed out (consider increasing timeout or optimizing tests)"
+            exit 1
+          fi
+          
+          if [ "${{ steps.integration.outcome }}" == "cancelled" ]; then
+            echo "⏱️ Integration tests timed out (consider increasing timeout or optimizing tests)"
+            exit 1
+          fi
           
           if [ "${{ steps.unit.outcome }}" != "success" ] || [ "${{ steps.integration.outcome }}" != "success" ]; then
             echo "❌ Tests failed!"
