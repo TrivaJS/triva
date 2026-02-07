@@ -210,6 +210,14 @@ async function runCacheBenchmarks() {
   );
 
   runner.printSummary();
+  
+  // Shutdown cache to clear timers
+  if (cache && cache.adapter) {
+    await cache.adapter.disconnect();
+  }
+  
+  // Force exit after a short delay
+  setTimeout(() => process.exit(0), 100);
 }
 
 runCacheBenchmarks().catch(err => {

@@ -1,0 +1,36 @@
+# Cloudflare Pages Redirects for Triva Documentation
+# 
+# This file handles dynamic routing for markdown documentation pages
+# Any path like /code-of-conduct, /contributing, etc. will serve docs.html
+# which then fetches and renders the appropriate markdown file
+#
+
+# Main documentation pages - serve docs.html for all
+/code-of-conduct          /docs.html    200
+/contributing             /docs.html    200
+/readme                   /docs.html    200
+/license                  /docs.html    200
+/changelog                /docs.html    200
+
+# Guide pages (anything that's not a static file)
+# These will be served by docs.html and fetch from /guide/ folder
+/getting-started          /docs.html    200
+/installation             /docs.html    200
+/api-reference            /docs.html    200
+/examples                 /docs.html    200
+
+# Static file serving - these take precedence
+# Actual markdown files should be accessible
+/guide/*                  /guide/:splat  200
+/docs/*                   /docs/:splat   200
+/*.md                     /:splat        200
+/*.js                     /:splat        200
+/*.css                    /:splat        200
+/*.png                    /:splat        200
+/*.jpg                    /:splat        200
+/*.svg                    /:splat        200
+/*.json                   /:splat        200
+
+# Catch-all for any other page (optional - uncomment to handle any route)
+# This should be LAST so specific rules above take precedence
+# /*                        /docs.html    200

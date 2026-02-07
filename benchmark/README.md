@@ -9,12 +9,12 @@ Comprehensive performance testing suite for all Triva framework features.
 npm run benchmark
 
 # Run specific benchmark
-npm run benchmark:cache
-npm run benchmark:routing
-npm run benchmark:middleware
-npm run benchmark:throttle
-npm run benchmark:logging
-npm run benchmark:http
+node benchmark/bench-cache.js
+node benchmark/bench-routing.js
+node benchmark/bench-middleware.js
+node benchmark/bench-throttle.js
+node benchmark/bench-logging.js
+node benchmark/bench-http.js
 ```
 
 ## Benchmark Suites
@@ -224,3 +224,5 @@ Run benchmarks:
 - After major changes
 - On different environments
 - Under different loads
+
+Track trends over time to catch performance regressions early!

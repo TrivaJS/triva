@@ -23,11 +23,11 @@
     "docs": "node scripts/generate-docs.js",
     "release": "node scripts/release.js",
     "migrate": "node scripts/migrate.js",
-    "example:basic": "node test/examples/basic.js",
-    "example:mongodb": "node test/examples/mongodb.js",
-    "example:redis": "node test/examples/redis.js",
-    "example:postgresql": "node test/examples/postgresql.js",
-    "example:enterprise": "node test/examples/enterprise.js"
+    "example:basic": "node examples/basic.js",
+    "example:mongodb": "node examples/mongodb.js",
+    "example:redis": "node examples/redis.js",
+    "example:postgresql": "node examples/postgresql.js",
+    "example:enterprise": "node examples/enterprise.js"
   },
   "keywords": [
     "http",
