@@ -27,17 +27,17 @@ async function runTests(type = 'all') {
 
   for (const testType of types) {
     const testDir = testDirs[testType];
-    
+
     console.log(`\n📋 Running ${testType} tests...\n`);
-    
+
     try {
       const files = await readdir(testDir);
       const testFiles = files.filter(f => f.endsWith('.test.js'));
-      
+
       for (const file of testFiles) {
         const testPath = resolve(testDir, file);
         const result = await runTestFile(testPath);
-        
+
         if (result.code !== 0) {
           totalFailed++;
         } else {
@@ -58,8 +58,7 @@ async function runTests(type = 'all') {
   if (totalFailed > 0) {
     process.exit(1);
   }
-  
-  console.log('🎉 All tests passed!\n');
+
 }
 
 function runTestFile(filepath) {
@@ -68,7 +67,7 @@ function runTestFile(filepath) {
       cwd: rootDir,
       stdio: 'inherit'
     });
-    
+
     child.on('close', (code) => resolve({ code }));
   });
 }

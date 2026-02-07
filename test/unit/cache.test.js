@@ -10,10 +10,10 @@ import { build, cache } from '../../lib/index.js';
 const tests = {
   async 'Memory Cache - set and get'() {
     await build({ cache: { type: 'memory' } });
-    
+
     await cache.set('test:key1', 'value1');
     const result = await cache.get('test:key1');
-    
+
     assert.strictEqual(result, 'value1');
   },
 
@@ -21,7 +21,7 @@ const tests = {
     const obj = { name: 'test', count: 42 };
     await cache.set('test:obj', obj);
     const result = await cache.get('test:obj');
-    
+
     assert.deepStrictEqual(result, obj);
   },
 
@@ -35,21 +35,21 @@ const tests = {
     await cache.set(key, 'value');
     await cache.delete(key);
     const result = await cache.get(key);
-    
+
     assert.strictEqual(result, null);
   },
 
   async 'Memory Cache - expires keys with TTL'() {
     const key = 'test:ttl:' + Date.now();
     await cache.set(key, 'expires', 300); // 300ms TTL
-    
+
     // Should exist immediately
     let result = await cache.get(key);
     assert.strictEqual(result, 'expires');
-    
+
     // Wait for expiry
     await new Promise(resolve => setTimeout(resolve, 400));
-    
+
     // Should be gone
     result = await cache.get(key);
     assert.strictEqual(result, null);
@@ -60,9 +60,9 @@ const tests = {
     await cache.set(`users:${timestamp}:1`, 'user1');
     await cache.set(`users:${timestamp}:2`, 'user2');
     await cache.set(`products:${timestamp}:1`, 'product1');
-    
+
     await cache.delete(`users:${timestamp}:*`);
-    
+
     assert.strictEqual(await cache.get(`users:${timestamp}:1`), null);
     assert.strictEqual(await cache.get(`users:${timestamp}:2`), null);
     assert.strictEqual(await cache.get(`products:${timestamp}:1`), 'product1');
@@ -72,7 +72,7 @@ const tests = {
     const key = 'test:null:' + Date.now();
     await cache.set(key, null);
     const result = await cache.get(key);
-    
+
     assert.strictEqual(result, null);
   },
 
@@ -80,7 +80,7 @@ const tests = {
     const key = 'test:empty:' + Date.now();
     await cache.set(key, '');
     const result = await cache.get(key);
-    
+
     assert.strictEqual(result, '');
   },
 
@@ -88,11 +88,11 @@ const tests = {
     const largeObj = {
       items: Array.from({ length: 1000 }, (_, i) => ({ id: i, data: `item-${i}` }))
     };
-    
+
     const key = 'test:large:' + Date.now();
     await cache.set(key, largeObj);
     const result = await cache.get(key);
-    
+
     assert.strictEqual(result.items.length, 1000);
     assert.strictEqual(result.items[500].id, 500);
   }
@@ -101,10 +101,10 @@ const tests = {
 // Simple test runner
 async function runTests() {
   console.log('🧪 Running Cache Tests\n');
-  
+
   let passed = 0;
   let failed = 0;
-  
+
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
@@ -116,12 +116,16 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-  
+
   if (failed > 0) {
     process.exit(1);
   }
+
+  console.log('🎉 All tests passed!\n');
+  process.exit(0);
+
 }
 
 runTests().catch(err => {
