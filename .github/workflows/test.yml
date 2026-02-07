@@ -81,9 +81,13 @@ jobs:
               integrationOutput = 'No integration test output found';
             }
             
-            const unitPassed = !unitOutput.includes('failed') && unitOutput.includes('passed');
-            const integrationPassed = !integrationOutput.includes('failed') && integrationOutput.includes('passed');
-            
+            // Check for "All tests passed!" message OR "0 failed" with checkmark emoji
+            const unitPassed = unitOutput.includes('🎉 All tests passed') || 
+                              unitOutput.includes('✅ Passed:');
+            const integrationPassed = integrationOutput.includes('🎉 All tests passed') || 
+                                     integrationOutput.includes('✅ Passed:');
+
+
             const unitIcon = unitPassed ? '✅' : '❌';
             const integrationIcon = integrationPassed ? '✅' : '❌';
             const statusText = unitPassed && integrationPassed ? '✅ All tests passed' : '❌ Some tests failed';
