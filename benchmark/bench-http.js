@@ -1,5 +1,7 @@
 
 import { performance } from 'perf_hooks';
+import { build, get, post, listen } from '../lib/index.js';
+import http from 'http';
 
 class BenchmarkRunner {
   constructor() {
@@ -53,11 +55,11 @@ class BenchmarkRunner {
   }
 
   printSummary() {
-    console.log('\n' + '='.repeat(70) + '\n📈 Benchmark Summary\n');
-    this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-    console.log('\n' + '='.repeat(70) + '\n');
+      console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+      this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
+      console.log(`\n${'='.repeat(70)}\n`);
+    }
   }
-}
 
 /**
  * HTTP Server Performance Benchmark

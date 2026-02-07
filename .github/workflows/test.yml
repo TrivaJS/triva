@@ -29,6 +29,7 @@ jobs:
       - name: Run unit tests
         id: unit
         continue-on-error: true
+        timeout-minutes: 2
         run: |
           npm run test:unit 2>&1 | tee unit.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
@@ -36,6 +37,7 @@ jobs:
       - name: Run integration tests
         id: integration
         continue-on-error: true
+        timeout-minutes: 2
         run: |
           npm run test:integration 2>&1 | tee integration.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT

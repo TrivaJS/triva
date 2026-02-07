@@ -1,9 +1,3 @@
-<p align="center">
-
-  <img src="https://github.trivajs.com/header.jpg" >
-
-</p>
-
 ## Overview
 
 This folder is a library of projects developed by the team maintaining Triva, with the Triva Framework & it's extension packages.
