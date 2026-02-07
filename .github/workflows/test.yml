@@ -30,35 +30,25 @@ jobs:
         id: unit
         continue-on-error: true
         timeout-minutes: 2
-        run: |
-          set +e
-          npm run test:unit 2>&1 | tee unit.log
-          EXIT_CODE=${PIPESTATUS[0]}
-          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
-          exit $EXIT_CODE
+        run: npm run test:unit 2>&1 | tee unit.log
 
       - name: Run integration tests
         id: integration
         continue-on-error: true
         timeout-minutes: 2
-        run: |
-          set +e
-          npm run test:integration 2>&1 | tee integration.log
-          EXIT_CODE=${PIPESTATUS[0]}
-          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
-          exit $EXIT_CODE
+        run: npm run test:integration 2>&1 | tee integration.log
 
       # Emit annotations (always run)
       - name: Emit test annotations
         if: always()
         run: |
-          if [ "${{ steps.unit.outputs.exit_code }}" != "0" ]; then
+          if [ "${{ steps.unit.outcome }}" != "success" ]; then
             echo "::error::Unit tests failed"
           else
             echo "::notice::Unit tests passed"
           fi
           
-          if [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
+          if [ "${{ steps.integration.outcome }}" != "success" ]; then
             echo "::error::Integration tests failed"
           else
             echo "::notice::Integration tests passed"
@@ -87,11 +77,9 @@ jobs:
               integrationOutput = 'No integration test output found';
             }
             
-            // Check for "All tests passed!" message OR "0 failed" with checkmark emoji
-            const unitPassed = unitOutput.includes('🎉 All tests passed') || 
-                              unitOutput.includes('✅ Passed:');
-            const integrationPassed = integrationOutput.includes('🎉 All tests passed') || 
-                                     integrationOutput.includes('✅ Passed:');
+            // Use step outcomes for accurate pass/fail status
+            const unitPassed = '${{ steps.unit.outcome }}' === 'success';
+            const integrationPassed = '${{ steps.integration.outcome }}' === 'success';
 
 
             const unitIcon = unitPassed ? '✅' : '❌';
@@ -122,10 +110,10 @@ jobs:
       - name: Check test results
         if: always()
         run: |
-          echo "Unit exit code: ${{ steps.unit.outputs.exit_code }}"
-          echo "Integration exit code: ${{ steps.integration.outputs.exit_code }}"
+          echo "Unit outcome: ${{ steps.unit.outcome }}"
+          echo "Integration outcome: ${{ steps.integration.outcome }}"
           
-          if [ "${{ steps.unit.outputs.exit_code }}" != "0" ] || [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
+          if [ "${{ steps.unit.outcome }}" != "success" ] || [ "${{ steps.integration.outcome }}" != "success" ]; then
             echo "❌ Tests failed!"
             exit 1
           fi
