@@ -51,7 +51,7 @@ jobs:
           else
             echo "::notice::Unit tests passed"
           fi
-
+          
           if [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
             echo "::error::Integration tests failed"
           else
@@ -65,56 +65,54 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-
+            
             let unitOutput = '';
             let integrationOutput = '';
-
+            
             try {
               unitOutput = fs.readFileSync('unit.log', 'utf8');
             } catch (e) {
               unitOutput = 'No unit test output found';
             }
-
+            
             try {
               integrationOutput = fs.readFileSync('integration.log', 'utf8');
             } catch (e) {
               integrationOutput = 'No integration test output found';
             }
-
+            
             const unitPassed = !unitOutput.includes('failed') && unitOutput.includes('passed');
             const integrationPassed = !integrationOutput.includes('failed') && integrationOutput.includes('passed');
-
+            
             const unitIcon = unitPassed ? '✅' : '❌';
             const integrationIcon = integrationPassed ? '✅' : '❌';
+            const statusText = unitPassed && integrationPassed ? '✅ All tests passed' : '❌ Some tests failed';
+            
+            const body = '## 🧪 Test Results\n\n' +
+              '### ' + unitIcon + ' Unit Tests\n' +
+              '```\n' +
+              unitOutput.slice(-30000) + '\n' +
+              '```\n\n' +
+              '### ' + integrationIcon + ' Integration Tests\n' +
+              '```\n' +
+              integrationOutput.slice(-30000) + '\n' +
+              '```\n\n' +
+              '---\n' +
+              '**Status**: ' + statusText;
 
-            const body = `## 🧪 Test Results
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
 
-            ### ${unitIcon} Unit Tests
-            \`\`\`
-            ${unitOutput.slice(-30000)}
-            \`\`\`
 
-            ### ${integrationIcon} Integration Tests
-            \`\`\`
-            ${integrationOutput.slice(-30000)}
-            \`\`\`
-
-            ---
-            **Status**: ${unitPassed && integrationPassed ? '✅ All tests passed' : '❌ Some tests failed'}
-            `;
-
-                        github.rest.issues.createComment({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          issue_number: context.issue.number,
-                          body
-                        });
-
-                  # Fail the job if tests failed
-                  - name: Check test results
-                    if: always()
-                    run: |
-                      if [ "${{ steps.unit.outputs.exit_code }}" != "0" ] || [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
-                        echo "Tests failed!"
-                        exit 1
-                      fi
+      # Fail the job if tests failed
+      - name: Check test results
+        if: always()
+        run: |
+          if [ "${{ steps.unit.outputs.exit_code }}" != "0" ] || [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
+            echo "Tests failed!"
+            exit 1
+          fi

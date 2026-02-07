@@ -84,15 +84,14 @@ jobs:
             let body = '## ⚡ Benchmark Results\n\n';
 
             for (const bench of benchmarks) {
-              body += `### ${bench.name}\n`;
+              body += '### ' + bench.name + '\n';
               
               try {
                 const content = fs.readFileSync(bench.file, 'utf8');
-                // Truncate to avoid hitting comment size limits
                 const truncated = content.length > 20000 ? content.slice(0, 20000) + '\n... (truncated)' : content;
-                body += `\`\`\`\n${truncated}\n\`\`\`\n\n`;
+                body += '```\n' + truncated + '\n```\n\n';
               } catch (e) {
-                body += `\`\`\`\nNo results found\n\`\`\`\n\n`;
+                body += '```\nNo results found\n```\n\n';
               }
             }
 
@@ -102,8 +101,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body
+              body: body
             });
+
 
       # Upload benchmark results as artifacts
       - name: Upload benchmark artifacts

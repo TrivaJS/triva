@@ -182,7 +182,7 @@ jobs:
               console.log('Could not read comparison results');
             }
             
-            let body = `## 📊 Benchmark Comparison: PR vs Main\n\n`;
+            let body = '## 📊 Benchmark Comparison: PR vs Main\n\n';
             
             if (summary.length === 0) {
               body += '⚠️ No benchmark comparisons available\n\n';
@@ -191,7 +191,7 @@ jobs:
               body += '|-----------|------|----|---------|\n';
               
               for (const item of summary) {
-                body += `| ${item.icon} ${item.name} | ${item.main} | ${item.pr} | ${item.delta} |\n`;
+                body += '| ' + item.icon + ' ' + item.name + ' | ' + item.main + ' | ' + item.pr + ' | ' + item.delta + ' |\n';
               }
               
               body += '\n';
@@ -213,7 +213,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body
+              body: body
             });
 
       # ----------------------------
