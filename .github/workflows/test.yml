@@ -31,16 +31,22 @@ jobs:
         continue-on-error: true
         timeout-minutes: 2
         run: |
+          set +e
           npm run test:unit 2>&1 | tee unit.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $EXIT_CODE
 
       - name: Run integration tests
         id: integration
         continue-on-error: true
         timeout-minutes: 2
         run: |
+          set +e
           npm run test:integration 2>&1 | tee integration.log
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $EXIT_CODE
 
       # Emit annotations (always run)
       - name: Emit test annotations
@@ -116,7 +122,12 @@ jobs:
       - name: Check test results
         if: always()
         run: |
+          echo "Unit exit code: ${{ steps.unit.outputs.exit_code }}"
+          echo "Integration exit code: ${{ steps.integration.outputs.exit_code }}"
+          
           if [ "${{ steps.unit.outputs.exit_code }}" != "0" ] || [ "${{ steps.integration.outputs.exit_code }}" != "0" ]; then
-            echo "Tests failed!"
+            echo "❌ Tests failed!"
             exit 1
           fi
+          
+          echo "✅ All tests passed!"
