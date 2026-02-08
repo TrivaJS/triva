@@ -14,5 +14,3 @@ Designed to be accessable for Enterprise Enviornments, and additionally small-sc
 ## Documentation
 
 Visit [docs.trivajs.com]() for a complete overview of our documentation & guides.
-
-## Contributing
