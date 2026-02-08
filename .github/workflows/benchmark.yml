@@ -1,8 +1,6 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [ "**" ]
   pull_request:
     branches: [ "**" ]
   workflow_dispatch: {}
@@ -85,22 +83,22 @@ jobs:
             function extractSummary(content) {
               const lines = content.split('\n');
               const summaryStart = lines.findIndex(line => line.includes('📈 Benchmark Summary'));
-              
+
               if (summaryStart === -1) return 'No summary available';
-              
+
               // Find the ending separator
-              let summaryEnd = lines.findIndex((line, idx) => 
+              let summaryEnd = lines.findIndex((line, idx) =>
                 idx > summaryStart && line.includes('======')
               );
-              
+
               if (summaryEnd === -1) summaryEnd = lines.length;
-              
+
               // Extract summary lines (skip the header and separator lines)
               const summaryLines = lines
                 .slice(summaryStart + 2, summaryEnd)
                 .filter(line => line.trim() && !line.includes('===='))
                 .map(line => line.trim());
-              
+
               return summaryLines.join('\n');
             }
 
@@ -114,16 +112,16 @@ jobs:
               try {
                 const content = fs.readFileSync(bench.file, 'utf8');
                 const summary = extractSummary(content);
-                
+
                 body += '### ' + bench.emoji + ' ' + bench.name + '\n\n';
-                
+
                 if (summary && summary !== 'No summary available') {
                   body += '```\n' + summary + '\n```\n\n';
                 } else {
                   body += '_No results_\n\n';
                   allSuccessful = false;
                 }
-                
+
               } catch (e) {
                 body += '### ' + bench.emoji + ' ' + bench.name + '\n\n';
                 body += '_Benchmark failed or timed out_\n\n';
@@ -133,8 +131,8 @@ jobs:
 
             body += '---\n\n';
             body += '**Status**: ' + (allSuccessful ? '✅ All benchmarks completed' : '⚠️ Some benchmarks incomplete') + '\n\n';
-            body += '📦 **[Download full results](' + 
-                    'https://github.com/' + context.repo.owner + '/' + context.repo.repo + 
+            body += '📦 **[Download full results](' +
+                    'https://github.com/' + context.repo.owner + '/' + context.repo.repo +
                     '/actions/runs/' + context.runId + ')** - Check artifacts section\n\n';
             body += '_Benchmarks run on Ubuntu Latest with Node.js 20_';
 

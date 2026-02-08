@@ -1,8 +1,6 @@
 name: Tests
 
 on:
-  push:
-    branches: [ "**" ]
   pull_request:
     branches: [ "**" ]
 
@@ -47,7 +45,7 @@ jobs:
           else
             echo "::notice::Unit tests passed"
           fi
-          
+
           if [ "${{ steps.integration.outcome }}" != "success" ]; then
             echo "::error::Integration tests failed"
           else
@@ -61,22 +59,22 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             let unitOutput = '';
             let integrationOutput = '';
-            
+
             try {
               unitOutput = fs.readFileSync('unit.log', 'utf8');
             } catch (e) {
               unitOutput = 'No unit test output found';
             }
-            
+
             try {
               integrationOutput = fs.readFileSync('integration.log', 'utf8');
             } catch (e) {
               integrationOutput = 'No integration test output found';
             }
-            
+
             // Use step outcomes for accurate pass/fail status
             const unitPassed = '${{ steps.unit.outcome }}' === 'success';
             const integrationPassed = '${{ steps.integration.outcome }}' === 'success';
@@ -85,7 +83,7 @@ jobs:
             const unitIcon = unitPassed ? '✅' : '❌';
             const integrationIcon = integrationPassed ? '✅' : '❌';
             const statusText = unitPassed && integrationPassed ? '✅ All tests passed' : '❌ Some tests failed';
-            
+
             const body = '## 🧪 Test Results\n\n' +
               '### ' + unitIcon + ' Unit Tests\n' +
               '```\n' +
@@ -112,21 +110,21 @@ jobs:
         run: |
           echo "Unit outcome: ${{ steps.unit.outcome }}"
           echo "Integration outcome: ${{ steps.integration.outcome }}"
-          
+
           # Check for timeout or failure
           if [ "${{ steps.unit.outcome }}" == "cancelled" ]; then
             echo "⏱️ Unit tests timed out (consider increasing timeout or optimizing tests)"
             exit 1
           fi
-          
+
           if [ "${{ steps.integration.outcome }}" == "cancelled" ]; then
             echo "⏱️ Integration tests timed out (consider increasing timeout or optimizing tests)"
             exit 1
           fi
-          
+
           if [ "${{ steps.unit.outcome }}" != "success" ] || [ "${{ steps.integration.outcome }}" != "success" ]; then
             echo "❌ Tests failed!"
             exit 1
           fi
-          
+
           echo "✅ All tests passed!"
