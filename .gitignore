@@ -1,3 +1,2 @@
-INSTALL.md
-.github/media.md
-.github/todo.md
+node_modules
+package-lock.json
