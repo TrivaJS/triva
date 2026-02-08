@@ -1,3 +1,9 @@
+<p align="center">
+
+  <img src="https://assets.trivajs.com/header.jpg" >
+
+</p>
+
 # Triva Benchmarks
 
 Comprehensive performance testing suite for all Triva framework features.
