@@ -4,10 +4,10 @@
 /org https://github.com/TrivaJS 200
 
 <!-- ARCHIVED URLS -->
-
-/header-logo.jpg https://github.trivajs.com/header.jpg 200
-/triva-header.jpg https://github.trivajs.com/header-web.png 200
-/triva-logo.png https://github.trivajs.com/logo.png 200
+/header-logo.jpg https://assets.trivajs.com/header.jpg 200
+/triva-header.jpg https://assets.trivajs.com/header-web.png 200
+/triva-logo.png https://assets.trivajs.com/logo.png 200
+/header.jpg https://assets.trivajs.com/header.jpg 200
 
 <!-- 404 -->
 

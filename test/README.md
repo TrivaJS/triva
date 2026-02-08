@@ -1,3 +1,9 @@
+<p align="center">
+
+  <img src="https://assets.trivajs.com/header.jpg" >
+
+</p>
+
 # Triva Tests
 
 This directory contains all tests and examples for the Triva framework.
@@ -111,10 +117,10 @@ describe('Feature Name', () => {
     it('should do something specific', async () => {
       // Arrange - set up test data
       const input = 'test value';
-      
+
       // Act - execute the code being tested
       const result = await someFunction(input);
-      
+
       // Assert - verify the result
       assert.strictEqual(result, expected);
     });

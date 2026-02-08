@@ -1,6 +1,6 @@
 <p align="center">
 
-  <img src="https://github.trivajs.com/header.jpg" >
+  <img src="https://assets.trivajs.com/header.jpg" >
 
 </p>
 
