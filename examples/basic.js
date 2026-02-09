@@ -3,7 +3,7 @@
  * Shows fundamental usage of Triva framework
  */
 
-import { build, get, post, put, del, listen } from '../../lib/index.js';
+import { build, get, post, put, del, listen } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting Basic Triva Example...\n');

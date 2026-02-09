@@ -3,7 +3,7 @@
  * Shows how to use Triva with PostgreSQL for enterprise caching
  */
 
-import { build, get, post, listen, cache } from '../../lib/index.js';
+import { build, get, post, listen, cache } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting PostgreSQL Example...\n');

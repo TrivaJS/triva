@@ -402,7 +402,4 @@ MIT License - see LICENSE file
 
 Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
 
-## Related
-
-- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
-- [@trivajs/cors](https://npmjs.com/package/@trivajs/cors) - CORS middleware
+[Triva Framework](https://github.com/TrivaJS/triva) - Main framework

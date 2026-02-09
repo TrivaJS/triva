@@ -317,7 +317,4 @@ MIT License - see LICENSE file
 
 Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
 
-## Related
-
-- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
-- [CORS Specification](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+[Triva Framework](https://github.com/TrivaJS/triva) - Main framework
