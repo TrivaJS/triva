@@ -1,0 +1,119 @@
+name: PR Changelog Generator
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get PR commits
+        id: commits
+        run: |
+          # Get all commits in this PR
+          COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].oid')
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Initialize changelog sections
+          PACKAGE_CHANGES=""
+          GITHUB_CHANGES=""
+          
+          # Process each commit
+          while IFS= read -r commit_sha; do
+            if [ -z "$commit_sha" ]; then
+              continue
+            fi
+            
+            # Get commit message
+            COMMIT_MSG=$(git log --format=%s -n 1 $commit_sha)
+            
+            # Get changed files
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $commit_sha)
+            
+            # Determine category based on changed files
+            PACKAGE_CHANGE=false
+            GITHUB_CHANGE=false
+            
+            while IFS= read -r file; do
+              if [[ "$file" == lib/* ]] || [[ "$file" == extensions/* ]] || [[ "$file" == types/* ]]; then
+                PACKAGE_CHANGE=true
+              elif [[ ! -z "$file" ]]; then
+                GITHUB_CHANGE=true
+              fi
+            done <<< "$CHANGED_FILES"
+            
+            # Build changelog entry
+            COMMIT_URL="https://github.com/${{ github.repository }}/commit/$commit_sha"
+            SHORT_SHA="${commit_sha:0:7}"
+            ENTRY="- [[\`\`$SHORT_SHA\`\`]($COMMIT_URL)] - $COMMIT_MSG"
+            
+            # Add to appropriate section
+            if [ "$PACKAGE_CHANGE" = true ]; then
+              PACKAGE_CHANGES="$PACKAGE_CHANGES
+          $ENTRY"
+            fi
+            
+            if [ "$GITHUB_CHANGE" = true ]; then
+              GITHUB_CHANGES="$GITHUB_CHANGES
+          $ENTRY"
+            fi
+          done <<< "${{ steps.commits.outputs.commits }}"
+          
+          # Build complete changelog
+          CHANGELOG="## Pull Request #${{ github.event.pull_request.number }} Changes"
+          
+          if [ ! -z "$PACKAGE_CHANGES" ]; then
+            CHANGELOG="$CHANGELOG
+          ### Notable Package Improvements$PACKAGE_CHANGES"
+          fi
+          
+          if [ ! -z "$GITHUB_CHANGES" ]; then
+            CHANGELOG="$CHANGELOG
+          ### Notable GitHub Changes$GITHUB_CHANGES"
+          fi
+          
+          # Save to file for comment
+          echo "$CHANGELOG" > changelog.md
+          
+          # Save for output (escape newlines for GitHub Actions)
+          {
+            echo 'changelog<<EOF'
+            cat changelog.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+      
+      - name: Find existing changelog comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Pull Request #${{ github.event.pull_request.number }} Changes'
+      
+      - name: Create or update changelog comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          edit-mode: replace
