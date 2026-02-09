@@ -87,12 +87,14 @@ const tests = {
 
   async 'Redis - expires keys with TTL'() {
     if (!redisAccessible) return;
-    await adapter.set('test:ttl', 'expires', 100);
+    // Use 2 seconds (2000ms) to ensure it converts to at least 2 seconds in Redis
+    await adapter.set('test:ttl', 'expires', 2000);
     
     let value = await adapter.get('test:ttl');
     assert.strictEqual(value, 'expires');
     
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Wait for expiration (2.5 seconds to be safe)
+    await new Promise(resolve => setTimeout(resolve, 2500));
     
     value = await adapter.get('test:ttl');
     assert.strictEqual(value, null);
