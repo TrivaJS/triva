@@ -1,10 +1,17 @@
+<p align="center">
+
+  <img src="https://assets.trivajs.com/header.jpg" >
+
+</p>
+
 # @trivajs/cli
 
-Command-line interface for managing [Triva](https://github.com/yourusername/triva) applications. Manage logs, errors, cache, and server directly from your terminal.
+Command-line interface for managing [Triva](https://github.com/TrivaJS) applications. Manage logs, errors, cache, and server directly from your terminal.
 
 ## Installation
 
 ```bash
+npm install triva
 npm install -g @trivajs/cli
 ```
 
@@ -31,12 +38,12 @@ triva server status
 
 ## Features
 
-✅ **Logs Management** - View, filter, export request logs  
-✅ **Error Tracking** - List, resolve, analyze errors  
-✅ **Cache Control** - Get, set, delete cache entries  
-✅ **Statistics** - View application metrics  
-✅ **Server Management** - Start, stop, restart server  
-✅ **Zero Dependencies** - Lightweight CLI tool  
+✅ **Logs Management** - View, filter, export request logs
+✅ **Error Tracking** - List, resolve, analyze errors
+✅ **Cache Control** - Get, set, delete cache entries
+✅ **Statistics** - View application metrics
+✅ **Server Management** - Start, stop, restart server
+✅ **Zero Dependencies** - Lightweight CLI tool
 
 ## Commands
 
@@ -393,9 +400,9 @@ MIT License - see LICENSE file
 
 ## Contributing
 
-Issues and PRs welcome! See main [Triva repository](https://github.com/yourusername/triva) for contribution guidelines.
+Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
 
 ## Related
 
-- [Triva Framework](https://github.com/yourusername/triva) - Main framework
+- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
 - [@trivajs/cors](https://npmjs.com/package/@trivajs/cors) - CORS middleware

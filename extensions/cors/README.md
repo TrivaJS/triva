@@ -1,11 +1,18 @@
+<p align="center">
+
+  <img src="https://assets.trivajs.com/header.jpg" >
+
+</p>
+
 # @trivajs/cors
 
-CORS middleware for [Triva](https://github.com/yourusername/triva) framework. Handles Cross-Origin Resource Sharing with full configuration support.
+CORS middleware for [Triva](https://github.com/TrivaJS) framework. Handles Cross-Origin Resource Sharing with full configuration support.
 
 ## Installation
 
 ```bash
-npm install @trivajs/cors triva
+npm install triva
+npm install @trivajs/cors
 ```
 
 ## Quick Start
@@ -28,12 +35,12 @@ listen(3000);
 
 ## Features
 
-✅ **Simple & Flexible** - Works seamlessly with Triva middleware system  
-✅ **Zero Dependencies** - Lightweight, no external dependencies  
-✅ **Full Configuration** - Complete control over CORS headers  
-✅ **Pre-configured Modes** - Development, strict, multi-origin, dynamic  
-✅ **Preflight Handling** - Automatic OPTIONS request handling  
-✅ **Origin Validation** - String, Array, RegExp, or Function validation  
+✅ **Simple & Flexible** - Works seamlessly with Triva middleware system
+✅ **Zero Dependencies** - Lightweight, no external dependencies
+✅ **Full Configuration** - Complete control over CORS headers
+✅ **Pre-configured Modes** - Development, strict, multi-origin, dynamic
+✅ **Preflight Handling** - Automatic OPTIONS request handling
+✅ **Origin Validation** - String, Array, RegExp, or Function validation
 
 ## Usage
 
@@ -74,25 +81,25 @@ use(cors({
 use(cors({
   // Origin validation
   origin: 'https://example.com',
-  
+
   // Allow credentials (cookies, authorization headers)
   credentials: true,
-  
+
   // Allowed HTTP methods
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  
+
   // Allowed request headers
   allowedHeaders: ['Content-Type', 'Authorization'],
-  
+
   // Headers exposed to the client
   exposedHeaders: ['X-Total-Count', 'X-RateLimit-Remaining'],
-  
+
   // Preflight cache duration (seconds)
   maxAge: 86400,
-  
+
   // Pass preflight to next handler
   preflightContinue: false,
-  
+
   // Preflight response status code
   optionsSuccessStatus: 204
 }));
@@ -244,14 +251,14 @@ use(cors({
 
 ## Security Best Practices
 
-❌ **Don't** use `origin: '*'` with `credentials: true`  
-✅ **Do** specify exact origins in production  
+❌ **Don't** use `origin: '*'` with `credentials: true`
+✅ **Do** specify exact origins in production
 
-❌ **Don't** expose sensitive headers unnecessarily  
-✅ **Do** limit `exposedHeaders` to what's needed  
+❌ **Don't** expose sensitive headers unnecessarily
+✅ **Do** limit `exposedHeaders` to what's needed
 
-❌ **Don't** allow all methods by default  
-✅ **Do** specify only required methods  
+❌ **Don't** allow all methods by default
+✅ **Do** specify only required methods
 
 ## Troubleshooting
 
@@ -308,9 +315,9 @@ MIT License - see LICENSE file
 
 ## Contributing
 
-Issues and PRs welcome! See main [Triva repository](https://github.com/yourusername/triva) for contribution guidelines.
+Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
 
 ## Related
 
-- [Triva Framework](https://github.com/yourusername/triva) - Main framework
+- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
 - [CORS Specification](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
