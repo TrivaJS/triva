@@ -289,11 +289,7 @@ To add snippets:
 
 Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
 
-## Related
-
-- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
-- [@trivajs/cors](https://npmjs.com/package/@trivajs/cors) - CORS middleware
-- [@trivajs/cli](https://npmjs.com/package/@trivajs/cli) - CLI tools
+[Triva Framework](https://github.com/TrivaJS/triva) - Main framework
 
 ## License
 

@@ -13,7 +13,7 @@ import {
   log,
   errorTracker,
   cookieParser
-} from '../../lib/index.js';
+} from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting Enterprise Example...\n');
