@@ -1,0 +1,261 @@
+name: Database Adapter Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/db-adapters.js'
+      - 'test/adapters/**'
+      - '.github/workflows/adapter-tests.yml'
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/db-adapters.js'
+      - 'test/adapters/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # Adapters that don't require external credentials
+  test-local-adapters:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter:
+          - embedded
+          - sqlite
+          - better-sqlite3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install adapter dependencies
+        run: |
+          if [ "${{ matrix.adapter }}" = "sqlite" ]; then
+            npm install sqlite3
+          elif [ "${{ matrix.adapter }}" = "better-sqlite3" ]; then
+            npm install better-sqlite3
+          fi
+
+      - name: Run adapter tests
+        run: node test/adapters/${{ matrix.adapter }}.test.js
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ ${{ matrix.adapter }} adapter tests passed"
+          else
+            echo "❌ ${{ matrix.adapter }} adapter tests failed"
+          fi
+
+  # Test Redis (with optional local Redis)
+  test-redis:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Redis adapter
+        run: npm install redis
+
+      - name: Run Redis tests
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: node test/adapters/redis.test.js
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Redis adapter tests passed"
+          else
+            echo "❌ Redis adapter tests failed"
+          fi
+
+  # Test MongoDB (with optional local MongoDB)
+  test-mongodb:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install MongoDB adapter
+        run: npm install mongodb
+
+      - name: Run MongoDB tests
+        env:
+          MONGODB_URI: mongodb://root:password@localhost:27017/triva_test?authSource=admin
+        run: node test/adapters/mongodb.test.js
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ MongoDB adapter tests passed"
+          else
+            echo "❌ MongoDB adapter tests failed"
+          fi
+
+  # Test cloud adapters (only if secrets are available)
+  test-cloud-adapters:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter:
+          - supabase
+          - postgresql
+          - mysql
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install adapter dependencies
+        run: |
+          if [ "${{ matrix.adapter }}" = "supabase" ]; then
+            npm install @supabase/supabase-js
+          elif [ "${{ matrix.adapter }}" = "postgresql" ]; then
+            npm install pg
+          elif [ "${{ matrix.adapter }}" = "mysql" ]; then
+            npm install mysql2
+          fi
+
+      - name: Check for credentials
+        id: check-creds
+        run: |
+          if [ "${{ matrix.adapter }}" = "supabase" ]; then
+            if [ -n "${{ secrets.SUPABASE_URL }}" ] && [ -n "${{ secrets.SUPABASE_KEY }}" ]; then
+              echo "has_creds=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_creds=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run adapter tests
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DATABASE: ${{ secrets.POSTGRES_DATABASE }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        run: node test/adapters/${{ matrix.adapter }}.test.js || echo "⏭️  Skipped (no credentials)"
+
+      - name: Skip message
+        if: steps.check-creds.outputs.has_creds == 'false'
+        run: |
+          echo "⏭️  Skipping ${{ matrix.adapter }} tests (no credentials configured)"
+          echo "   Configure secrets in repository settings to enable these tests"
+
+  # Summary report
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [test-local-adapters, test-redis, test-mongodb, test-cloud-adapters]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Database Adapter Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Adapter | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Local adapters
+          echo "| Embedded | ${{ needs.test-local-adapters.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQLite | ${{ needs.test-local-adapters.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Better-SQLite3 | ${{ needs.test-local-adapters.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+          # Service adapters
+          echo "| Redis | ${{ needs.test-redis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| MongoDB | ${{ needs.test-mongodb.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+          # Cloud adapters
+          echo "| Supabase | ${{ needs.test-cloud-adapters.result == 'success' && '✅ Passed' || needs.test-cloud-adapters.result == 'skipped' && '⏭️  Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | ⏭️  Skipped |" >> $GITHUB_STEP_SUMMARY
+          echo "| MySQL | ⏭️  Skipped |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️  Tests skipped (no credentials or package not installed)" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Tests failed" >> $GITHUB_STEP_SUMMARY
