@@ -1,10 +1,17 @@
+<p align="center">
+
+  <img src="https://assets.trivajs.com/header.jpg" >
+
+</p>
+
 # @trivajs/shortcuts
 
-IDE snippets and shortcuts for [Triva](https://github.com/yourusername/triva) framework. Automatically installs code snippets to VS Code, VS Code Insiders, and Atom.
+IDE snippets and shortcuts for [Triva](https://github.com/TrivaJS) framework. Automatically installs code snippets to VS Code, VS Code Insiders, and Atom.
 
 ## Installation
 
 ```bash
+npm install triva
 npm install @trivajs/shortcuts
 ```
 
@@ -12,9 +19,9 @@ The snippets will automatically install to your IDE(s) on `npm install` and auto
 
 ## Supported IDEs
 
-✅ **VS Code** - Detects and installs to `User/snippets/`  
-✅ **VS Code Insiders** - Detects and installs separately  
-✅ **Atom** - Installs to `~/.atom/snippets.cson`  
+✅ **VS Code** - Detects and installs to `User/snippets/`
+✅ **VS Code Insiders** - Detects and installs separately
+✅ **Atom** - Installs to `~/.atom/snippets.cson`
 
 ## Available Snippets
 
@@ -278,7 +285,13 @@ To add snippets:
 
 ## Related
 
-- [Triva Framework](https://github.com/yourusername/triva) - Main framework
+## Contributing
+
+Issues and PRs welcome! See main [Triva repository](https://github.com/TrivaJS/triva) for contribution guidelines.
+
+## Related
+
+- [Triva Framework](https://github.com/TrivaJS/triva) - Main framework
 - [@trivajs/cors](https://npmjs.com/package/@trivajs/cors) - CORS middleware
 - [@trivajs/cli](https://npmjs.com/package/@trivajs/cli) - CLI tools
 
