@@ -55,12 +55,20 @@ jobs:
         timeout-minutes: 5
         run: npm run benchmark:http 2>&1 | tee http.log
 
+      - name: Generate test certificates for HTTPS benchmark
+        run: npm run generate-certs
+
+      - name: Run HTTPS benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:https 2>&1 | tee https.log
+
       # Emit annotations (always run)
       - name: Emit benchmark annotations
         if: always()
         run: |
           echo "::notice::Benchmarks completed"
-          echo "::notice::Results available for: cache, routing, middleware, throttle, logging, http"
+          echo "::notice::Results available for: cache, routing, middleware, throttle, logging, http, https"
 
       # Comment on PR with summary
       - name: Comment benchmark results on PR
@@ -76,7 +84,8 @@ jobs:
               { name: 'Middleware', file: 'middleware.log', emoji: '🔗' },
               { name: 'Throttle', file: 'throttle.log', emoji: '⏱️' },
               { name: 'Logging', file: 'logging.log', emoji: '📝' },
-              { name: 'HTTP', file: 'http.log', emoji: '🌐' }
+              { name: 'HTTP', file: 'http.log', emoji: '🌐' },
+              { name: 'HTTPS', file: 'https.log', emoji: '🔒' }
             ];
 
             // Extract summary section from each log

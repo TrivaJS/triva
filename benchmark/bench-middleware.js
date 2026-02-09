@@ -54,11 +54,11 @@ class BenchmarkRunner {
   }
 
   printSummary() {
-      console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
-      this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-      console.log(`\n${'='.repeat(70)}\n`);
+        console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+        this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
+        console.log(`\n${'='.repeat(70)}\n`);
+      }
     }
-  }
 
 /**
  * Middleware Performance Benchmark
