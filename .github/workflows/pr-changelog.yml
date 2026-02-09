@@ -20,6 +20,14 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Get PR info
+        id: pr-info
+        run: |
+          PR_TITLE=$(gh pr view ${{ github.event.pull_request.number }} --json title --jq '.title')
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
       - name: Get PR commits
         id: commits
         run: |
@@ -35,8 +43,8 @@ jobs:
         id: changelog
         run: |
           # Initialize changelog sections
-          PACKAGE_CHANGES=""
-          GITHUB_CHANGES=""
+          NOTABLE_CHANGES=""
+          ALL_COMMITS=""
           
           # Process each commit
           while IFS= read -r commit_sha; do
@@ -44,53 +52,50 @@ jobs:
               continue
             fi
             
-            # Get commit message
+            # Get commit info
             COMMIT_MSG=$(git log --format=%s -n 1 $commit_sha)
+            COMMIT_DATE=$(git log --format=%cs -n 1 $commit_sha)
             
             # Get changed files
             CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $commit_sha)
             
-            # Determine category based on changed files
-            PACKAGE_CHANGE=false
-            GITHUB_CHANGE=false
-            
+            # Check if this is a notable change
+            NOTABLE=false
             while IFS= read -r file; do
-              if [[ "$file" == lib/* ]] || [[ "$file" == extensions/* ]] || [[ "$file" == types/* ]]; then
-                PACKAGE_CHANGE=true
-              elif [[ ! -z "$file" ]]; then
-                GITHUB_CHANGE=true
+              if [[ "$file" == lib/* ]] || [[ "$file" == types/* ]] || [[ "$file" == extensions/* ]] || [[ "$file" == submodules/* ]]; then
+                NOTABLE=true
+                break
               fi
             done <<< "$CHANGED_FILES"
             
             # Build changelog entry
             COMMIT_URL="https://github.com/${{ github.repository }}/commit/$commit_sha"
             SHORT_SHA="${commit_sha:0:7}"
-            ENTRY="- [[\`\`$SHORT_SHA\`\`]($COMMIT_URL)] - $COMMIT_MSG"
+            ENTRY="- [[\`\`$SHORT_SHA\`\`]($COMMIT_URL)] - $COMMIT_MSG **($COMMIT_DATE)**"
             
-            # Add to appropriate section
-            if [ "$PACKAGE_CHANGE" = true ]; then
-              PACKAGE_CHANGES="$PACKAGE_CHANGES
+            # Add to all commits
+            ALL_COMMITS="$ALL_COMMITS
           $ENTRY"
-            fi
             
-            if [ "$GITHUB_CHANGE" = true ]; then
-              GITHUB_CHANGES="$GITHUB_CHANGES
+            # Add to notable if applicable
+            if [ "$NOTABLE" = true ]; then
+              NOTABLE_CHANGES="$NOTABLE_CHANGES
           $ENTRY"
             fi
           done <<< "${{ steps.commits.outputs.commits }}"
           
           # Build complete changelog
-          CHANGELOG="## Pull Request #${{ github.event.pull_request.number }} Changes"
+          CHANGELOG="## Version ${{ steps.pr-info.outputs.pr_title }} Release"
           
-          if [ ! -z "$PACKAGE_CHANGES" ]; then
+          if [ ! -z "$NOTABLE_CHANGES" ]; then
             CHANGELOG="$CHANGELOG
-          ### Notable Package Improvements$PACKAGE_CHANGES"
+
+          ### Notable Changes$NOTABLE_CHANGES"
           fi
           
-          if [ ! -z "$GITHUB_CHANGES" ]; then
-            CHANGELOG="$CHANGELOG
-          ### Notable GitHub Changes$GITHUB_CHANGES"
-          fi
+          CHANGELOG="$CHANGELOG
+
+          ### All Commits$ALL_COMMITS"
           
           # Save to file for comment
           echo "$CHANGELOG" > changelog.md
@@ -102,18 +107,29 @@ jobs:
             echo EOF
           } >> $GITHUB_OUTPUT
       
+      - name: Upload changelog as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-${{ github.event.pull_request.number }}-changelog
+          path: changelog.md
+          retention-days: 90
+      
       - name: Find existing changelog comment
         id: find-comment
         uses: peter-evans/find-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: 'Pull Request #${{ github.event.pull_request.number }} Changes'
+          body-includes: 'Version'
       
       - name: Create or update changelog comment
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            📥 [Download full changelog](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
