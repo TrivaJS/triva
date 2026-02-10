@@ -27,7 +27,16 @@ jobs:
         run: npm install
       
       - name: Run unit tests
-        run: npm run test:unit
+        id: unit-tests
+        run: npm run test:unit 2>&1 | tee unit-tests.log
+      
+      - name: Upload unit test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-logs
+          path: unit-tests.log
+          retention-days: 30
   
   integration-tests:
     name: Integration Tests
@@ -49,7 +58,16 @@ jobs:
         run: npm run generate-certs
       
       - name: Run integration tests
-        run: npm run test:integration
+        id: integration-tests
+        run: npm run test:integration 2>&1 | tee integration-tests.log
+      
+      - name: Upload integration test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-logs
+          path: integration-tests.log
+          retention-days: 30
   
   db-tests:
     name: Database Adapter Tests
@@ -114,11 +132,20 @@ jobs:
           fi
       
       - name: Run adapter tests
+        id: adapter-tests
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           MONGODB_URI: mongodb://root:password@localhost:27017/triva_test?authSource=admin
-        run: npm run test:adapter:${{ matrix.adapter }}
+        run: npm run test:adapter:${{ matrix.adapter }} 2>&1 | tee adapter-${{ matrix.adapter }}.log
+      
+      - name: Upload adapter test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adapter-test-logs-${{ matrix.adapter }}
+          path: adapter-${{ matrix.adapter }}.log
+          retention-days: 30
   
   extension-tests:
     name: Extension Compatibility Tests
@@ -206,6 +233,19 @@ jobs:
               "description": "Create a basic Triva server",
               "category": "setup"
             },
+            "Triva: Build Server": {
+              "prefix": "triva-build",
+              "body": [
+                "import { build } from 'triva';",
+                "",
+                "await build({",
+                "  env: '${1:development}',",
+                "  cache: { type: '${2:memory}' }",
+                "});"
+              ],
+              "description": "Build a Triva server instance",
+              "category": "setup"
+            },
             "Triva: GET Route": {
               "prefix": "triva-get",
               "body": [
@@ -242,14 +282,23 @@ jobs:
           EOF
       
       - name: Test extension compatibility
+        id: extension-test
         if: steps.check-extension.outputs.exists == 'true'
         working-directory: ./extensions/${{ matrix.extension }}
         run: |
           if [ -f "package.json" ] && grep -q '"test":' package.json && ! grep -q '"test": *""' package.json; then
-            npm test
+            npm test 2>&1 | tee ../../extension-${{ matrix.extension }}.log
           else
-            echo "✅ No tests defined for ${{ matrix.extension }}"
+            echo "✅ No tests defined for ${{ matrix.extension }}" | tee ../../extension-${{ matrix.extension }}.log
           fi
+      
+      - name: Upload extension test logs
+        if: always() && steps.check-extension.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-test-logs-${{ matrix.extension }}
+          path: extension-${{ matrix.extension }}.log
+          retention-days: 30
       
       - name: Integration test
         if: steps.check-extension.outputs.exists == 'true' && matrix.extension != 'cli'
@@ -330,6 +379,91 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Download all test logs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-logs*'
+          merge-multiple: true
+        continue-on-error: true
+      
+      - name: Build detailed comment
+        id: build-comment
+        run: |
+          {
+            echo 'comment<<EOF'
+            echo '## 🔍 Release Integrity Verification'
+            echo ''
+            echo '| Test Suite | Status |'
+            echo '|------------|--------|'
+            echo '| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
+            echo '| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
+            echo '| Database Adapters | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
+            echo '| Extensions | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |'
+            echo ''
+            echo '**Overall Status:** ${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.db-tests.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}'
+            echo ''
+            echo '---'
+            echo ''
+            
+            # Unit Tests Details
+            if [ -f "unit-tests.log" ]; then
+              echo '### ✅ Unit Tests'
+              echo ''
+              echo '```'
+              cat unit-tests.log
+              echo '```'
+              echo ''
+            fi
+            
+            # Integration Tests Details
+            if [ -f "integration-tests.log" ]; then
+              echo '### ✅ Integration Tests'
+              echo ''
+              echo '```'
+              cat integration-tests.log
+              echo '```'
+              echo ''
+            fi
+            
+            # Database Tests Details
+            echo '### 📊 Database Adapter Tests'
+            echo ''
+            for adapter in embedded sqlite better-sqlite3 redis mongodb; do
+              if [ -f "adapter-${adapter}.log" ]; then
+                echo "<details>"
+                echo "<summary>${adapter^} Adapter</summary>"
+                echo ''
+                echo '```'
+                cat "adapter-${adapter}.log"
+                echo '```'
+                echo ''
+                echo "</details>"
+                echo ''
+              fi
+            done
+            
+            # Extension Tests Details
+            echo '### 🔌 Extension Tests'
+            echo ''
+            for ext in cors cli shortcuts; do
+              if [ -f "extension-${ext}.log" ]; then
+                echo "<details>"
+                echo "<summary>@trivajs/${ext}</summary>"
+                echo ''
+                echo '```'
+                cat "extension-${ext}.log"
+                echo '```'
+                echo ''
+                echo "</details>"
+                echo ''
+              fi
+            done
+            
+            echo '---'
+            echo '*Last updated: ${{ github.event.pull_request.updated_at }}*'
+            echo EOF
+          } >> $GITHUB_OUTPUT
+      
       - name: Find or create status comment
         uses: peter-evans/find-comment@v3
         id: find-comment
@@ -344,17 +478,4 @@ jobs:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           edit-mode: replace
-          body: |
-            ## 🔍 Release Integrity Verification
-            
-            | Test Suite | Status |
-            |------------|--------|
-            | Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
-            | Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
-            | Database Adapters | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
-            | Extensions | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
-            
-            **Overall Status:** ${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.db-tests.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
-            
-            ---
-            *Last updated: ${{ github.event.pull_request.updated_at }}*
+          body: ${{ steps.build-comment.outputs.comment }}

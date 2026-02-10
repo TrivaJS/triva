@@ -223,6 +223,15 @@ jobs:
         with:
           name: benchmark-results
       
+      - name: Read benchmark results
+        id: benchmark-content
+        run: |
+          {
+            echo 'result<<EOF'
+            cat benchmark-results.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+      
       - name: Find existing comment
         uses: peter-evans/find-comment@v3
         id: find-comment
@@ -242,7 +251,7 @@ jobs:
             
             ---
             
-            ${{ steps.benchmarks.outputs.result }}
+            ${{ steps.benchmark-content.outputs.result }}
             
             ---
             📥 [Download Changelog](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
