@@ -1,0 +1,250 @@
+name: Release Changes & Benchmark Notes
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  benchmark-review:
+    name: Benchmark Review
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run cache benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:cache 2>&1 | tee cache.log
+      
+      - name: Run routing benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:routing 2>&1 | tee routing.log
+      
+      - name: Run middleware benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:middleware 2>&1 | tee middleware.log
+      
+      - name: Run throttle benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:throttle 2>&1 | tee throttle.log
+      
+      - name: Run logging benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:logging 2>&1 | tee logging.log
+      
+      - name: Run HTTP benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:http 2>&1 | tee http.log
+      
+      - name: Generate certificates for HTTPS benchmark
+        run: npm run generate-certs
+      
+      - name: Run HTTPS benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: npm run benchmark:https 2>&1 | tee https.log
+      
+      - name: Extract benchmark results
+        id: benchmarks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            const benchmarks = [
+              { name: 'Cache', file: 'cache.log', emoji: '🗄️' },
+              { name: 'Routing', file: 'routing.log', emoji: '🚦' },
+              { name: 'Middleware', file: 'middleware.log', emoji: '🔗' },
+              { name: 'Throttle', file: 'throttle.log', emoji: '⏱️' },
+              { name: 'Logging', file: 'logging.log', emoji: '📝' },
+              { name: 'HTTP', file: 'http.log', emoji: '🌐' },
+              { name: 'HTTPS', file: 'https.log', emoji: '🔒' }
+            ];
+            
+            function extractSummary(content) {
+              const lines = content.split('\n');
+              const summaryStart = lines.findIndex(line => line.includes('📈 Benchmark Summary'));
+              
+              if (summaryStart === -1) return 'No summary available';
+              
+              let summaryEnd = lines.findIndex((line, idx) => 
+                idx > summaryStart && line.includes('======')
+              );
+              
+              if (summaryEnd === -1) summaryEnd = lines.length;
+              
+              const summaryLines = lines
+                .slice(summaryStart + 2, summaryEnd)
+                .filter(line => line.trim() && !line.includes('===='))
+                .join('\n');
+              
+              return summaryLines || 'No results';
+            }
+            
+            let comment = '## 📊 Benchmark Results\n\n';
+            
+            for (const bench of benchmarks) {
+              try {
+                const content = fs.readFileSync(bench.file, 'utf8');
+                const summary = extractSummary(content);
+                comment += `### ${bench.emoji} ${bench.name}\n\n\`\`\`\n${summary}\n\`\`\`\n\n`;
+              } catch (error) {
+                comment += `### ${bench.emoji} ${bench.name}\n\n*No results available*\n\n`;
+              }
+            }
+            
+            return comment;
+      
+      - name: Save benchmark results
+        run: echo "${{ steps.benchmarks.outputs.result }}" > benchmark-results.md
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results.md
+          retention-days: 90
+  
+  changelog-write:
+    name: Changelog Write
+    runs-on: ubuntu-latest
+    needs: benchmark-review
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get PR info
+        id: pr-info
+        run: |
+          PR_TITLE=$(gh pr view ${{ github.event.pull_request.number }} --json title --jq '.title')
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Get PR commits
+        id: commits
+        run: |
+          COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].oid')
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          NOTABLE_CHANGES=""
+          ALL_COMMITS=""
+          
+          while IFS= read -r commit_sha; do
+            if [ -z "$commit_sha" ]; then
+              continue
+            fi
+            
+            COMMIT_MSG=$(git log --format=%s -n 1 $commit_sha)
+            COMMIT_DATE=$(git log --format=%cs -n 1 $commit_sha)
+            
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $commit_sha)
+            
+            NOTABLE=false
+            while IFS= read -r file; do
+              if [[ "$file" == lib/* ]] || [[ "$file" == types/* ]] || [[ "$file" == extensions/* ]] || [[ "$file" == submodules/* ]]; then
+                NOTABLE=true
+                break
+              fi
+            done <<< "$CHANGED_FILES"
+            
+            COMMIT_URL="https://github.com/${{ github.repository }}/commit/$commit_sha"
+            SHORT_SHA="${commit_sha:0:7}"
+            ENTRY="- [[\`\`$SHORT_SHA\`\`]($COMMIT_URL)] - $COMMIT_MSG **($COMMIT_DATE)**"
+            
+            ALL_COMMITS="$ALL_COMMITS
+          $ENTRY"
+            
+            if [ "$NOTABLE" = true ]; then
+              NOTABLE_CHANGES="$NOTABLE_CHANGES
+          $ENTRY"
+            fi
+          done <<< "${{ steps.commits.outputs.commits }}"
+          
+          CHANGELOG="## Version ${{ steps.pr-info.outputs.pr_title }} Release"
+          
+          if [ ! -z "$NOTABLE_CHANGES" ]; then
+            CHANGELOG="$CHANGELOG
+
+          ### Notable Changes$NOTABLE_CHANGES"
+          fi
+          
+          CHANGELOG="$CHANGELOG
+
+          ### All Commits$ALL_COMMITS"
+          
+          echo "$CHANGELOG" > changelog.md
+          
+          {
+            echo 'changelog<<EOF'
+            cat changelog.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+      
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-${{ github.event.pull_request.number }}-changelog
+          path: changelog.md
+          retention-days: 90
+      
+      - name: Download benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-results
+      
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Version'
+      
+      - name: Create or update combined comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            
+            ${{ steps.benchmarks.outputs.result }}
+            
+            ---
+            📥 [Download Changelog](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            *Last updated: ${{ github.event.pull_request.updated_at }}*

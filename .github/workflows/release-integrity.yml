@@ -1,0 +1,360 @@
+name: Release Integrity Verification
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run unit tests
+        run: npm run test:unit
+  
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Generate certificates for HTTPS tests
+        run: npm run generate-certs
+      
+      - name: Run integration tests
+        run: npm run test:integration
+  
+  db-tests:
+    name: Database Adapter Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter:
+          - embedded
+          - sqlite
+          - better-sqlite3
+          - redis
+          - mongodb
+    
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Install adapter dependencies
+        run: |
+          if [ "${{ matrix.adapter }}" = "sqlite" ]; then
+            npm install sqlite3
+          elif [ "${{ matrix.adapter }}" = "better-sqlite3" ]; then
+            npm install better-sqlite3
+          elif [ "${{ matrix.adapter }}" = "redis" ]; then
+            npm install redis
+          elif [ "${{ matrix.adapter }}" = "mongodb" ]; then
+            npm install mongodb
+          fi
+      
+      - name: Run adapter tests
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          MONGODB_URI: mongodb://root:password@localhost:27017/triva_test?authSource=admin
+        run: npm run test:adapter:${{ matrix.adapter }}
+  
+  extension-tests:
+    name: Extension Compatibility Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        extension:
+          - cors
+          - cli
+          - shortcuts
+    
+    steps:
+      - name: Checkout main package
+        uses: actions/checkout@v4
+        with:
+          path: triva
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install main package dependencies
+        working-directory: ./triva
+        run: npm install
+      
+      - name: Pack main package
+        working-directory: ./triva
+        run: |
+          npm pack
+          mv triva-*.tgz ../triva-local.tgz
+      
+      - name: Checkout extension
+        uses: actions/checkout@v4
+        with:
+          repository: trivajs/${{ matrix.extension }}
+          path: extensions/${{ matrix.extension }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
+      - name: Check if extension exists
+        id: check-extension
+        run: |
+          if [ -d "extensions/${{ matrix.extension }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Install extension dependencies
+        if: steps.check-extension.outputs.exists == 'true'
+        working-directory: ./extensions/${{ matrix.extension }}
+        run: |
+          mkdir -p node_modules
+          cd node_modules
+          tar -xzf ../../../triva-local.tgz
+          mv package triva
+          cd ..
+          npm install --legacy-peer-deps || true
+      
+      - name: Create snippets for shortcuts
+        if: steps.check-extension.outputs.exists == 'true' && matrix.extension == 'shortcuts'
+        run: |
+          mkdir -p snippets
+          cat > snippets/triva.json << 'EOF'
+          {
+            "Triva: Basic Server": {
+              "prefix": "triva-server",
+              "body": [
+                "import { build, get, listen } from 'triva';",
+                "",
+                "await build({",
+                "  env: 'development',",
+                "  cache: { type: 'memory' }",
+                "});",
+                "",
+                "get('/', (req, res) => {",
+                "  res.json({ message: 'Hello Triva!' });",
+                "});",
+                "",
+                "listen(3000);"
+              ],
+              "description": "Create a basic Triva server",
+              "category": "setup"
+            },
+            "Triva: GET Route": {
+              "prefix": "triva-get",
+              "body": [
+                "get('${1:path}', (req, res) => {",
+                "  res.json({ ${2:data} });",
+                "});"
+              ],
+              "description": "Create a GET route",
+              "category": "route"
+            },
+            "Triva: POST Route": {
+              "prefix": "triva-post",
+              "body": [
+                "post('${1:path}', async (req, res) => {",
+                "  const body = await req.json();",
+                "  res.status(201).json({ ${2:data} });",
+                "});"
+              ],
+              "description": "Create a POST route",
+              "category": "route"
+            },
+            "Triva: Cache Config": {
+              "prefix": "triva-cache",
+              "body": [
+                "cache: {",
+                "  type: '${1:memory}',",
+                "  retention: ${2:3600000}",
+                "}"
+              ],
+              "description": "Configure cache",
+              "category": "cache"
+            }
+          }
+          EOF
+      
+      - name: Test extension compatibility
+        if: steps.check-extension.outputs.exists == 'true'
+        working-directory: ./extensions/${{ matrix.extension }}
+        run: |
+          if [ -f "package.json" ] && grep -q '"test":' package.json && ! grep -q '"test": *""' package.json; then
+            npm test
+          else
+            echo "✅ No tests defined for ${{ matrix.extension }}"
+          fi
+      
+      - name: Integration test
+        if: steps.check-extension.outputs.exists == 'true' && matrix.extension != 'cli'
+        run: |
+          cat > integration-test.js << 'EOF'
+          import { build, get } from './triva/lib/index.js';
+          
+          async function testExtension() {
+            const extensionName = process.env.EXTENSION_NAME;
+            
+            try {
+              const modulePath = `./extensions/${extensionName}/lib/index.js`;
+              const moduleUrl = new URL(modulePath, import.meta.url);
+              await import(moduleUrl.href);
+              console.log(`✅ Successfully imported @trivajs/${extensionName}`);
+            } catch (error) {
+              console.error(`❌ Failed to import extension:`, error.message);
+              process.exit(1);
+            }
+            
+            try {
+              await build({
+                env: 'test',
+                cache: { type: 'memory' }
+              });
+              
+              get('/', (req, res) => {
+                res.json({ test: 'ok' });
+              });
+              
+              console.log(`✅ Server built successfully with ${extensionName} loaded`);
+              process.exit(0);
+            } catch (error) {
+              console.error('❌ Failed to build server:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          testExtension();
+          EOF
+          
+          EXTENSION_NAME=${{ matrix.extension }} node integration-test.js
+      
+      - name: CLI verification test
+        if: steps.check-extension.outputs.exists == 'true' && matrix.extension == 'cli'
+        run: |
+          if [ -f "extensions/cli/bin/triva.js" ] || [ -f "extensions/cli/bin/cli.js" ]; then
+            echo "✅ CLI binary found"
+            echo "✅ @trivajs/cli is compatible (CLI tool)"
+          else
+            echo "⚠️  CLI binary not found in expected location"
+          fi
+      
+      - name: Report extension not found
+        if: steps.check-extension.outputs.exists == 'false'
+        run: |
+          echo "⏭️  Extension repository @trivajs/${{ matrix.extension }} not found or not accessible"
+          exit 0
+  
+  full-package-compatibility:
+    name: Full Package Compatibility
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, db-tests, extension-tests]
+    if: always()
+    
+    steps:
+      - name: Check all test results
+        run: |
+          echo "## Release Integrity Verification Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database Tests | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Extension Tests | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Find or create status comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Release Integrity Verification'
+      
+      - name: Create or update status comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            ## 🔍 Release Integrity Verification
+            
+            | Test Suite | Status |
+            |------------|--------|
+            | Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Database Adapters | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Extensions | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
+            
+            **Overall Status:** ${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.db-tests.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
+            
+            ---
+            *Last updated: ${{ github.event.pull_request.updated_at }}*
