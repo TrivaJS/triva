@@ -13,6 +13,7 @@
     "test": "node scripts/test.js",
     "test:unit": "node scripts/test.js unit",
     "test:integration": "node scripts/test.js integration",
+    "test:update-notifier": "node test/update-notifier.test.js",
     "test:adapters": "npm run test:adapter:embedded && npm run test:adapter:sqlite && npm run test:adapter:better-sqlite3",
     "test:adapter:embedded": "node test/adapters/embedded.test.js",
     "test:adapter:sqlite": "node test/adapters/sqlite.test.js",
