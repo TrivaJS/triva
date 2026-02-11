@@ -3,12 +3,12 @@
  * Demonstrates the update checking system
  */
 
-import { 
-  checkForUpdates, 
-  clearCache, 
+import {
+  checkForUpdates,
+  clearCache,
   getCacheStatus,
-  CONFIG 
-} from '../lib/update-check.js';
+  CONFIG
+} from '../lib/utils/update-check.js';
 
 console.log('🧪 Triva Update Notifier Test\n');
 

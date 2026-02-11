@@ -3,7 +3,7 @@
  */
 
 import assert from 'assert';
-import { EmbeddedAdapter } from '../../lib/db-adapters.js';
+import { EmbeddedAdapter } from '../../lib/database/embedded.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -50,19 +50,19 @@ const tests = {
     await adapter.set('test:delete', 'value');
     const deleted = await adapter.delete('test:delete');
     assert.strictEqual(deleted, true);
-    
+
     const value = await adapter.get('test:delete');
     assert.strictEqual(value, null);
   },
 
   async 'Embedded - expires keys with TTL'() {
     await adapter.set('test:ttl', 'expires', 100);
-    
+
     let value = await adapter.get('test:ttl');
     assert.strictEqual(value, 'expires');
-    
+
     await new Promise(resolve => setTimeout(resolve, 150));
-    
+
     value = await adapter.get('test:ttl');
     assert.strictEqual(value, null);
   },
@@ -71,7 +71,7 @@ const tests = {
     await adapter.set('list:1', 'a');
     await adapter.set('list:2', 'b');
     await adapter.set('other:key', 'c');
-    
+
     const keys = await adapter.keys('list:*');
     assert.ok(keys.includes('list:1'));
     assert.ok(keys.includes('list:2'));
@@ -80,10 +80,10 @@ const tests = {
 
   async 'Embedded - checks key existence'() {
     await adapter.set('test:exists', 'value');
-    
+
     const exists = await adapter.has('test:exists');
     assert.strictEqual(exists, true);
-    
+
     const notExists = await adapter.has('test:notexists');
     assert.strictEqual(notExists, false);
   },
@@ -91,10 +91,10 @@ const tests = {
   async 'Embedded - clears all keys'() {
     await adapter.set('clear:1', 'a');
     await adapter.set('clear:2', 'b');
-    
+
     const count = await adapter.clear();
     assert.ok(count >= 2);
-    
+
     const value = await adapter.get('clear:1');
     assert.strictEqual(value, null);
   },
@@ -102,7 +102,7 @@ const tests = {
   async 'Embedded - persists data to file'() {
     await adapter.set('persist:test', 'data');
     await adapter.disconnect();
-    
+
     const fileExists = await fs.access(testDbPath).then(() => true).catch(() => false);
     assert.strictEqual(fileExists, true);
   },
@@ -110,7 +110,7 @@ const tests = {
   async 'Embedded - loads persisted data'() {
     adapter = new EmbeddedAdapter({ filename: testDbPath });
     await adapter.connect();
-    
+
     const value = await adapter.get('persist:test');
     assert.strictEqual(value, 'data');
   },
@@ -127,7 +127,7 @@ const tests = {
   async 'Embedded Encryption - encrypts data'() {
     await encryptedAdapter.set('encrypted:key', { secret: 'data' });
     await encryptedAdapter.disconnect();
-    
+
     // Read file directly - should be encrypted (not readable JSON)
     const fileContent = await fs.readFile(testDbEncryptedPath, 'utf8');
     assert.ok(!fileContent.includes('secret'));
@@ -140,7 +140,7 @@ const tests = {
       encryptionKey: 'test-secret-key-for-testing-only'
     });
     await encryptedAdapter.connect();
-    
+
     const value = await encryptedAdapter.get('encrypted:key');
     assert.deepStrictEqual(value, { secret: 'data' });
   },
@@ -150,7 +150,7 @@ const tests = {
       filename: testDbEncryptedPath,
       encryptionKey: 'wrong-key'
     });
-    
+
     try {
       await wrongKeyAdapter.connect();
       await wrongKeyAdapter.get('encrypted:key');
@@ -167,7 +167,7 @@ const tests = {
     if (encryptedAdapter && encryptedAdapter.connected) {
       await encryptedAdapter.disconnect();
     }
-    
+
     await fs.rm(testDir, { recursive: true, force: true });
   }
 };
@@ -175,10 +175,10 @@ const tests = {
 // Test runner
 async function runTests() {
   console.log('🧪 Running Embedded Database Tests\n');
-  
+
   let passed = 0;
   let failed = 0;
-  
+
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
@@ -190,13 +190,13 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-  
+
   if (failed > 0) {
     process.exit(1);
   }
-  
+
   process.exit(0);
 }
 
