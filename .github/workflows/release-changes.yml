@@ -13,6 +13,8 @@ jobs:
   benchmark-review:
     name: Benchmark Review
     runs-on: ubuntu-latest
+    outputs:
+      benchmark-results: ${{ steps.extract-benchmarks.outputs.results }}
     
     steps:
       - name: Checkout code
@@ -65,65 +67,35 @@ jobs:
         run: npm run benchmark:https 2>&1 | tee https.log
       
       - name: Extract benchmark results
-        id: benchmarks
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
+        id: extract-benchmarks
+        run: |
+          {
+            echo 'results<<EOF'
+            echo '## 📊 Benchmark Results'
+            echo ''
             
-            const benchmarks = [
-              { name: 'Cache', file: 'cache.log', emoji: '🗄️' },
-              { name: 'Routing', file: 'routing.log', emoji: '🚦' },
-              { name: 'Middleware', file: 'middleware.log', emoji: '🔗' },
-              { name: 'Throttle', file: 'throttle.log', emoji: '⏱️' },
-              { name: 'Logging', file: 'logging.log', emoji: '📝' },
-              { name: 'HTTP', file: 'http.log', emoji: '🌐' },
-              { name: 'HTTPS', file: 'https.log', emoji: '🔒' }
-            ];
+            for bench_file in cache.log routing.log middleware.log throttle.log logging.log http.log https.log; do
+              bench_name=$(echo "$bench_file" | sed 's/.log$//' | sed 's/^./\U&/')
+              
+              if [ -f "$bench_file" ]; then
+                echo "### ${bench_name}"
+                echo ''
+                
+                # Extract summary section
+                if grep -q "📈 Benchmark Summary" "$bench_file"; then
+                  echo '```'
+                  sed -n '/📈 Benchmark Summary/,/======/p' "$bench_file" | sed '/======/d'
+                  echo '```'
+                else
+                  echo '*No results available*'
+                fi
+                
+                echo ''
+              fi
+            done
             
-            function extractSummary(content) {
-              const lines = content.split('\n');
-              const summaryStart = lines.findIndex(line => line.includes('📈 Benchmark Summary'));
-              
-              if (summaryStart === -1) return 'No summary available';
-              
-              let summaryEnd = lines.findIndex((line, idx) => 
-                idx > summaryStart && line.includes('======')
-              );
-              
-              if (summaryEnd === -1) summaryEnd = lines.length;
-              
-              const summaryLines = lines
-                .slice(summaryStart + 2, summaryEnd)
-                .filter(line => line.trim() && !line.includes('===='))
-                .join('\n');
-              
-              return summaryLines || 'No results';
-            }
-            
-            let comment = '## 📊 Benchmark Results\n\n';
-            
-            for (const bench of benchmarks) {
-              try {
-                const content = fs.readFileSync(bench.file, 'utf8');
-                const summary = extractSummary(content);
-                comment += `### ${bench.emoji} ${bench.name}\n\n\`\`\`\n${summary}\n\`\`\`\n\n`;
-              } catch (error) {
-                comment += `### ${bench.emoji} ${bench.name}\n\n*No results available*\n\n`;
-              }
-            }
-            
-            return comment;
-      
-      - name: Save benchmark results
-        run: echo "${{ steps.benchmarks.outputs.result }}" > benchmark-results.md
-      
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results
-          path: benchmark-results.md
-          retention-days: 90
+            echo EOF
+          } >> $GITHUB_OUTPUT
   
   changelog-write:
     name: Changelog Write
@@ -242,7 +214,7 @@ jobs:
             
             ---
             
-            ${{ steps.benchmarks.outputs.result }}
+            ${{ needs.benchmark-review.outputs.benchmark-results }}
             
             ---
             📥 [Download Changelog](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
