@@ -105,15 +105,20 @@ jobs:
           else
             echo "has_outdated=true" >> $GITHUB_OUTPUT
             
-            # Convert to JSON
-            outdated_json=$(printf '%s\n' "${outdated_modules[@]}" | jq -R . | jq -s .)
-            echo "outdated=$outdated_json" >> $GITHUB_OUTPUT
+            # Convert to JSON properly escaped for multiline output
+            outdated_json=$(printf '%s\n' "${outdated_modules[@]}" | jq -R . | jq -s -c .)
+            
+            # Use heredoc format for multiline output
+            echo "outdated<<EOF" >> $GITHUB_OUTPUT
+            echo "$outdated_json" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
             
             echo "⚠️  Found ${#outdated_modules[@]} outdated submodule(s)"
           fi
       
       - name: Create or update PR comment
         id: comment
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -268,29 +273,39 @@ jobs:
           script: |
             const commentId = '${{ needs.check-submodules.outputs.comment-id }}';
             
-            const { data: comment } = await github.rest.issues.getComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId
-            });
+            if (!commentId || commentId === '') {
+              console.log('No comment ID found, skipping update');
+              return;
+            }
             
-            const updatedBody = comment.body.replace(
-              `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ matrix.latest }}\` | ${{ matrix.behind }} commits | ⏸️ Awaiting approval |`,
-              `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ steps.update.outputs.new_commit }}\` | ${{ matrix.behind }} commits | ✅ Updated |`
-            );
-            
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId,
-              body: updatedBody
-            });
+            try {
+              const { data: comment } = await github.rest.issues.getComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId
+              });
+              
+              const updatedBody = comment.body.replace(
+                `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ matrix.latest }}\` | ${{ matrix.behind }} commits | ⏸️ Awaiting approval |`,
+                `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ steps.update.outputs.new_commit }}\` | ${{ matrix.behind }} commits | ✅ Updated |`
+              );
+              
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId,
+                body: updatedBody
+              });
+            } catch (error) {
+              console.log('Error updating comment:', error.message);
+            }
+
 
   finalize:
     name: Finalize Status
     runs-on: ubuntu-latest
     needs: [check-submodules, sync-submodule]
-    if: always() && needs.check-submodules.outputs.has-outdated == 'true'
+    if: always() && needs.check-submodules.outputs.has-outdated == 'true' && github.event_name == 'pull_request'
     
     steps:
       - name: Update final comment
@@ -300,26 +315,35 @@ jobs:
             const commentId = '${{ needs.check-submodules.outputs.comment-id }}';
             const result = '${{ needs.sync-submodule.result }}';
             
-            const { data: comment } = await github.rest.issues.getComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId
-            });
-            
-            let status = '';
-            if (result === 'success') {
-              status = '\n\n---\n\n✅ **All submodules updated successfully!**';
-            } else if (result === 'cancelled') {
-              status = '\n\n---\n\n⏸️ **Updates cancelled** - Re-run workflow to try again';
-            } else if (result === 'skipped') {
-              status = '\n\n---\n\n⏭️ **Updates skipped** - Manual approval not provided';
-            } else {
-              status = '\n\n---\n\n⚠️ **Some updates failed** - Check workflow logs';
+            if (!commentId || commentId === '') {
+              console.log('No comment ID found, skipping update');
+              return;
             }
             
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId,
-              body: comment.body + status + `\n\n*Completed: ${new Date().toISOString()}*`
-            });
+            try {
+              const { data: comment } = await github.rest.issues.getComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId
+              });
+              
+              let status = '';
+              if (result === 'success') {
+                status = '\n\n---\n\n✅ **All submodules updated successfully!**';
+              } else if (result === 'cancelled') {
+                status = '\n\n---\n\n⏸️ **Updates cancelled** - Re-run workflow to try again';
+              } else if (result === 'skipped') {
+                status = '\n\n---\n\n⏭️ **Updates skipped** - Manual approval not provided';
+              } else {
+                status = '\n\n---\n\n⚠️ **Some updates failed** - Check workflow logs';
+              }
+              
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId,
+                body: comment.body + status + `\n\n*Completed: ${new Date().toISOString()}*`
+              });
+            } catch (error) {
+              console.log('Error updating comment:', error.message);
+            }
