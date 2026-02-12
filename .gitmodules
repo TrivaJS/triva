@@ -4,16 +4,6 @@
 [submodule "submodules/cache"]
 	path = submodules/cache
 	url = https://github.com/TrivaJS/cache
-[submodule "extensions/cli"]
-	path = submodules/cli
-	url = https://github.com/TrivaJS/cli
-[submodule "extensions/cors"]
-	path = submodules/cors
-	url = https://github.com/TrivaJS/cors
-[submodule "extensions/shortcuts"]
-	path = submodules/shortcuts
-	url = https://github.com/TrivaJS/shortcuts
-
 [submodule "docs"]
 	path = docs
 	url = https://github.com/TrivaJS/docs
