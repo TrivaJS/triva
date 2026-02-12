@@ -248,13 +248,12 @@ jobs:
           git add "${{ matrix.path }}"
           
           if ! git diff --cached --quiet; then
-            git commit -m "chore: update submodule ${{ matrix.name }}
-
-- Path: ${{ matrix.path }}
-- From: ${{ matrix.current }}
-- To: $new_commit
-- Commits: ${{ matrix.behind }}
-- Branch: ${{ matrix.branch }}"
+            git commit -m "chore: update submodule ${{ matrix.name }}" \
+              -m "Path: ${{ matrix.path }}" \
+              -m "From: ${{ matrix.current }}" \
+              -m "To: $new_commit" \
+              -m "Commits: ${{ matrix.behind }}" \
+              -m "Branch: ${{ matrix.branch }}"
             
             git push
             echo "✅ Updated and pushed!"
