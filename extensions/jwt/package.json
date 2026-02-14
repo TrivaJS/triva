@@ -1,0 +1,41 @@
+{
+  "name": "@triva/jwt",
+  "version": "1.0.0",
+  "description": "JWT authentication extension for Triva",
+  "main": "src/index.js",
+  "type": "module",
+  "keywords": [
+    "triva",
+    "triva-extension",
+    "jwt",
+    "authentication",
+    "auth",
+    "token"
+  ],
+  "author": "Triva Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trivajs/jwt"
+  },
+  "bugs": {
+    "url": "https://github.com/trivajs/jwt/issues"
+  },
+  "homepage": "https://github.com/trivajs/jwt#readme",
+  "peerDependencies": {
+    "triva": "^1.0.0"
+  },
+  "devDependencies": {
+    "triva": "^1.0.0",
+    "mocha": "^10.0.0",
+    "chai": "^4.3.0"
+  },
+  "scripts": {
+    "test": "mocha test/**/*.test.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}
