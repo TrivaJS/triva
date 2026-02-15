@@ -61,7 +61,7 @@ jobs:
         if: steps.has-submodules.outputs.exists == 'true'
         run: |
           echo "Attempting to initialize submodules..."
-          
+
           # Parse .gitmodules and try each submodule individually
           while IFS= read -r line; do
             if [[ $line =~ ^\[submodule\ \"(.+)\"\] ]]; then
@@ -70,10 +70,10 @@ jobs:
               submodule_path="$line"
               submodule_path="${submodule_path#*= }"  # Remove "path = " prefix
               submodule_path=$(echo "$submodule_path" | xargs)  # Trim whitespace
-              
+
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
               echo "Attempting: $submodule_name ($submodule_path)"
-              
+
               # Try to initialize and update this specific submodule
               if git submodule init "$submodule_path" 2>/dev/null && \
                  git submodule update --init "$submodule_path" 2>/dev/null; then
@@ -83,7 +83,7 @@ jobs:
               fi
             fi
           done < .gitmodules
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Submodule initialization complete"
 
@@ -135,7 +135,7 @@ jobs:
               if ! git rev-parse --git-dir > /dev/null 2>&1; then
                 echo "   ⚠️  Invalid git repository"
                 skipped_modules+=("${submodule_path}|${submodule_name}|Invalid repository")
-                cd - > /dev/null
+                cd - > /dev/null || true
                 continue
               fi
 
@@ -143,7 +143,7 @@ jobs:
               current_commit=$(git rev-parse HEAD 2>/dev/null) || {
                 echo "   ⚠️  Cannot determine current commit"
                 skipped_modules+=("${submodule_path}|${submodule_name}|Cannot read commit")
-                cd - > /dev/null
+                cd - > /dev/null || true
                 continue
               }
               echo "   Current: $current_commit"
@@ -152,7 +152,7 @@ jobs:
               if ! git fetch origin --quiet 2>/dev/null; then
                 echo "   ⚠️  Cannot fetch from remote (private or inaccessible)"
                 skipped_modules+=("${submodule_path}|${submodule_name}|Cannot fetch from remote")
-                cd - > /dev/null
+                cd - > /dev/null || true
                 continue
               fi
 
@@ -166,7 +166,7 @@ jobs:
                 else
                   echo "   ⚠️  Cannot determine default branch"
                   skipped_modules+=("${submodule_path}|${submodule_name}|Unknown branch")
-                  cd - > /dev/null
+                  cd - > /dev/null || true
                   continue
                 fi
               }
@@ -176,7 +176,7 @@ jobs:
               latest_commit=$(git rev-parse origin/$default_branch 2>/dev/null) || {
                 echo "   ⚠️  Cannot determine latest commit"
                 skipped_modules+=("${submodule_path}|${submodule_name}|Cannot read latest")
-                cd - > /dev/null
+                cd - > /dev/null || true
                 continue
               }
               echo "   Latest: $latest_commit"
@@ -187,17 +187,17 @@ jobs:
               # Compare commits
               if [ "$current_commit" != "$latest_commit" ]; then
                 echo "   ⚠️  OUTDATED"
-                
+
                 commits_behind=$(git rev-list --count HEAD..origin/$default_branch 2>/dev/null || echo "unknown")
                 echo "   Behind by: $commits_behind commits"
-                
+
                 outdated_entry="${submodule_path}|${submodule_name}|${current_commit}|${latest_commit}|${commits_behind}|${default_branch}"
                 outdated_modules+=("$outdated_entry")
               else
                 echo "   ✅ Up to date"
               fi
 
-              cd - > /dev/null
+              cd - > /dev/null || true
             fi
           done < .gitmodules
 
@@ -236,6 +236,9 @@ jobs:
             echo "skipped=" >> $GITHUB_OUTPUT
           fi
 
+          # Explicitly exit 0 to ensure success
+          exit 0
+
       - name: Create or update PR comment
         id: comment
         if: github.event_name == 'pull_request' && steps.has-submodules.outputs.exists == 'true'
@@ -245,9 +248,9 @@ jobs:
             const outdated = JSON.parse('${{ steps.check.outputs.outdated }}' || '[]');
             const skipped = JSON.parse('${{ steps.check.outputs.skipped }}' || '[]');
             const hasOutdated = '${{ steps.check.outputs.has_outdated }}' === 'true';
-            
+
             let body = '## 🔄 Submodule Sync Check\n\n';
-            
+
             if (!hasOutdated && skipped.length === 0) {
               body += '✅ **All submodules are up to date!**\n\n';
             } else {
@@ -261,7 +264,7 @@ jobs:
                 });
                 body += '\n**Update command:**\n```bash\ngit submodule update --remote\n```\n\n';
               }
-              
+
               if (skipped.length > 0) {
                 body += '### ℹ️ Skipped Submodules (Private/Inaccessible)\n\n';
                 body += '| Submodule | Reason |\n|-----------|--------|\n';
@@ -272,19 +275,19 @@ jobs:
                 body += '\n*Private submodules are automatically skipped.*\n\n';
               }
             }
-            
+
             body += '---\n*Automated check · Runs on PR updates*';
-            
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
-            const botComment = comments.find(c => 
+
+            const botComment = comments.find(c =>
               c.user.type === 'Bot' && c.body.includes('🔄 Submodule Sync Check')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -305,16 +308,16 @@ jobs:
         if: always()
         run: |
           echo "# Submodule Sync Check" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.check.outputs.has_outdated }}" == "true" ]; then
             echo "⚠️ Outdated submodules found" >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ All accessible submodules up to date" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [ -n "${{ steps.check.outputs.skipped }}" ]; then
             echo "ℹ️ Some submodules skipped (private/inaccessible)" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Ensure we always exit 0
           exit 0
