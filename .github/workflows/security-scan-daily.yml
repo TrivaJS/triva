@@ -26,19 +26,23 @@ jobs:
   repository-scan:
     name: Repository Security Analysis
     runs-on: ubuntu-latest
-    
+    outputs:
+      critical: ${{ steps.npm-audit.outputs.critical }}
+      high: ${{ steps.npm-audit.outputs.high }}
+      moderate: ${{ steps.npm-audit.outputs.moderate }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for better analysis
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       # Dependency Vulnerability Scan
       - name: Run npm audit
         id: npm-audit
@@ -46,39 +50,39 @@ jobs:
         run: |
           echo "## NPM Audit Results" >> $GITHUB_STEP_SUMMARY
           npm audit --json > audit-results.json || true
-          
+
           # Parse and display critical/high vulnerabilities
           CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-results.json)
           HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-results.json)
           MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-results.json)
           LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-results.json)
-          
+
           echo "- 🔴 Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
           echo "- 🟠 High: $HIGH" >> $GITHUB_STEP_SUMMARY
           echo "- 🟡 Moderate: $MODERATE" >> $GITHUB_STEP_SUMMARY
           echo "- 🔵 Low: $LOW" >> $GITHUB_STEP_SUMMARY
-          
+
           # Set outputs
           echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
           echo "high=$HIGH" >> $GITHUB_OUTPUT
           echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          
+
           # Fail if critical or high vulnerabilities
           if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
             echo "::error::Found $CRITICAL critical and $HIGH high severity vulnerabilities"
             exit 1
           fi
-      
+
       # Secret Scanning
       - name: GitGuardian scan
         uses: GitGuardian/ggshield-action@v1
         continue-on-error: true
         env:
           GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
-          GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
+          GITHUB_PUSH_BASE_SHA: ${{ github.event.repository.default_branch }}
           GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-      
+
       # Trivy Vulnerability Scanner
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -89,19 +93,19 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         continue-on-error: true
         with:
           sarif_file: 'trivy-results.sarif'
-      
+
       # License Compliance Check
       - name: Check license compliance
         run: |
           echo "## License Compliance" >> $GITHUB_STEP_SUMMARY
           npx license-checker --summary >> $GITHUB_STEP_SUMMARY || true
-      
+
       # Upload artifacts
       - name: Upload audit results
         uses: actions/upload-artifact@v4
@@ -119,53 +123,53 @@ jobs:
   npm-package-scan:
     name: NPM Package Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       # Download and scan the published npm package
       - name: Download latest triva from npm
         run: |
           npm pack triva
           tar -xzf triva-*.tgz
           cd package
-          
+
           echo "## NPM Package Analysis" >> $GITHUB_STEP_SUMMARY
           echo "**Package:** triva" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** $(node -p "require('./package.json').version")" >> $GITHUB_STEP_SUMMARY
-      
+
       - name: Scan npm package
         run: |
           cd package
-          
+
           # Check for known vulnerabilities in the package itself
           npm audit --package-lock-only --json > ../npm-package-audit.json || true
-          
+
           # Check package integrity
           npm view triva --json > ../npm-package-info.json
-          
+
           # Parse results
           CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' ../npm-package-audit.json)
           HIGH=$(jq '.metadata.vulnerabilities.high // 0' ../npm-package-audit.json)
-          
+
           echo "### Published Package Security" >> $GITHUB_STEP_SUMMARY
           echo "- 🔴 Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
           echo "- 🟠 High: $HIGH" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
             echo "::warning::Published npm package has vulnerabilities"
           fi
-      
+
       # Malware scan on npm package
       - name: Scan for malicious code patterns
         run: |
           cd package
-          
+
           echo "## Malware Scan" >> $GITHUB_STEP_SUMMARY
-          
+
           # Check for suspicious patterns
           SUSPICIOUS=$(grep -r -i "eval\|exec\|child_process\|spawn" . || true)
           if [ -n "$SUSPICIOUS" ]; then
@@ -174,7 +178,7 @@ jobs:
           else
             echo "✅ No suspicious patterns detected" >> $GITHUB_STEP_SUMMARY
           fi
-      
+
       - name: Upload npm scan results
         uses: actions/upload-artifact@v4
         if: always()
@@ -191,22 +195,22 @@ jobs:
   code-analysis:
     name: Code Quality & Security
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       # ESLint Security Plugin
       - name: Run ESLint security scan
         continue-on-error: true
         run: |
           npm install -g eslint eslint-plugin-security
-          
+
           cat > .eslintrc.json << 'EOF'
           {
             "extends": ["plugin:security/recommended"],
@@ -217,17 +221,17 @@ jobs:
             }
           }
           EOF
-          
+
           eslint lib/**/*.js --format json > eslint-results.json || true
-          
+
           # Summary
           ERRORS=$(jq '[.[] | .errorCount] | add // 0' eslint-results.json)
           WARNINGS=$(jq '[.[] | .warningCount] | add // 0' eslint-results.json)
-          
+
           echo "## ESLint Security Analysis" >> $GITHUB_STEP_SUMMARY
           echo "- ❌ Errors: $ERRORS" >> $GITHUB_STEP_SUMMARY
           echo "- ⚠️ Warnings: $WARNINGS" >> $GITHUB_STEP_SUMMARY
-      
+
       # Semgrep Security Scan
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
@@ -238,18 +242,18 @@ jobs:
             p/nodejs
             p/javascript
           generateSarif: true
-      
+
       - name: Upload Semgrep results
         uses: github/codeql-action/upload-sarif@v3
         continue-on-error: true
         with:
           sarif_file: semgrep.sarif
-      
+
       # Check for hardcoded secrets
       - name: Scan for hardcoded secrets
         run: |
           echo "## Hardcoded Secrets Scan" >> $GITHUB_STEP_SUMMARY
-          
+
           # Check for common secret patterns
           if grep -r -E "(api[_-]?key|secret[_-]?key|password|token)\s*=\s*['\"][^'\"]{8,}" lib/ 2>/dev/null; then
             echo "⚠️ Potential hardcoded secrets found" >> $GITHUB_STEP_SUMMARY
@@ -257,7 +261,7 @@ jobs:
           else
             echo "✅ No hardcoded secrets detected" >> $GITHUB_STEP_SUMMARY
           fi
-      
+
       - name: Upload analysis results
         uses: actions/upload-artifact@v4
         if: always()
@@ -276,99 +280,99 @@ jobs:
     needs: [repository-scan, npm-package-scan, code-analysis]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: security-reports
-      
+
       - name: Generate comprehensive report
         run: |
           REPORT_DATE=$(date +"%Y-%m-%d")
           REPORT_FILE="security-reports/SECURITY-REPORT-${REPORT_DATE}.md"
-          
+
           cat > "$REPORT_FILE" << 'REPORT_EOF'
           # Triva Security Report
-          
+
           **Date:** $(date +"%Y-%m-%d %H:%M:%S UTC")
           **Repository:** ${{ github.repository }}
           **Branch:** ${{ github.ref_name }}
           **Commit:** ${{ github.sha }}
-          
+
           ---
-          
+
           ## Summary
-          
+
           | Scan Type | Status | Critical | High | Medium | Low |
           |-----------|--------|----------|------|--------|-----|
           | Repository | ${{ needs.repository-scan.result }} | - | - | - | - |
           | NPM Package | ${{ needs.npm-package-scan.result }} | - | - | - | - |
           | Code Analysis | ${{ needs.code-analysis.result }} | - | - | - | - |
-          
+
           ---
-          
+
           ## Detailed Findings
-          
+
           ### Repository Scan
           See artifacts for detailed npm audit and Trivy results.
-          
+
           ### NPM Package Scan
           Latest published version scanned for vulnerabilities.
-          
+
           ### Code Analysis
           ESLint security plugin and Semgrep analysis completed.
-          
+
           ---
-          
+
           ## Action Items
-          
+
           - [ ] Review all CRITICAL findings
           - [ ] Review all HIGH findings
           - [ ] Plan remediation for MEDIUM findings
           - [ ] Update dependencies if needed
-          
+
           ---
-          
+
           ## Artifacts
-          
+
           All detailed scan results are available in the workflow artifacts.
-          
+
           **Report Generated:** $(date +"%Y-%m-%d %H:%M:%S UTC")
           REPORT_EOF
-          
+
           # Display report
           cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
-      
+
       - name: Create issue if critical vulnerabilities found
         if: needs.repository-scan.outputs.critical > 0 || needs.repository-scan.outputs.high > 0
         uses: actions/github-script@v7
         with:
           script: |
             const date = new Date().toISOString().split('T')[0];
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `🚨 Security Alert: Critical/High Vulnerabilities Detected - ${date}`,
               body: `## Security Scan Alert
-              
+
               **Date:** ${date}
               **Workflow:** ${{ github.workflow }}
               **Run:** ${{ github.run_id }}
-              
+
               ### Findings
               - 🔴 Critical: ${{ needs.repository-scan.outputs.critical }}
               - 🟠 High: ${{ needs.repository-scan.outputs.high }}
-              
+
               ### Action Required
               Please review the workflow run and take immediate action.
-              
+
               [View Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-              
+
               ### Labels
               - security
               - vulnerability
@@ -376,7 +380,7 @@ jobs:
               `,
               labels: ['security', 'vulnerability', 'needs-triage', 'automated']
             });
-      
+
       - name: Upload comprehensive report
         uses: actions/upload-artifact@v4
         with:
@@ -392,13 +396,13 @@ jobs:
     needs: [repository-scan, npm-package-scan, code-analysis, generate-report]
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'schedule'
-    
+
     steps:
       - name: Send notification
         run: |
           echo "Daily security scan completed"
           echo "Status: ${{ job.status }}"
-          
+
           # You can add Slack, Discord, email notifications here
           # Example Slack webhook:
           # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \

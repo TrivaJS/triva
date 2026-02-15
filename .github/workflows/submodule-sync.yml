@@ -213,7 +213,9 @@ jobs:
           if [ ${#outdated_modules[@]} -eq 0 ]; then
             echo "has_outdated=false" >> $GITHUB_OUTPUT
             echo "outdated=" >> $GITHUB_OUTPUT
-            [ $accessible_modules -gt 0 ] && echo "✅ All $accessible_modules accessible submodules are up to date"
+            if [ $accessible_modules -gt 0 ]; then
+              echo "✅ All $accessible_modules accessible submodules are up to date"
+            fi
           else
             echo "has_outdated=true" >> $GITHUB_OUTPUT
             outdated_json=$(printf '%s\n' "${outdated_modules[@]}" | jq -R . | jq -s -c .)
@@ -303,8 +305,16 @@ jobs:
         if: always()
         run: |
           echo "# Submodule Sync Check" >> $GITHUB_STEP_SUMMARY
-          [ "${{ steps.check.outputs.has_outdated }}" == "true" ] && \
-            echo "⚠️ Outdated submodules found" >> $GITHUB_STEP_SUMMARY || \
+          
+          if [ "${{ steps.check.outputs.has_outdated }}" == "true" ]; then
+            echo "⚠️ Outdated submodules found" >> $GITHUB_STEP_SUMMARY
+          else
             echo "✅ All accessible submodules up to date" >> $GITHUB_STEP_SUMMARY
-          [ -n "${{ steps.check.outputs.skipped }}" ] && \
+          fi
+          
+          if [ -n "${{ steps.check.outputs.skipped }}" ]; then
             echo "ℹ️ Some submodules skipped (private/inaccessible)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Ensure we always exit 0
+          exit 0
