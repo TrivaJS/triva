@@ -181,8 +181,8 @@ jobs:
               }
               echo "   Latest: $latest_commit"
 
-              # Successfully accessed
-              ((accessible_modules++))
+              # Successfully accessed - increment safely
+              accessible_modules=$((accessible_modules + 1))
 
               # Compare commits
               if [ "$current_commit" != "$latest_commit" ]; then
@@ -199,7 +199,7 @@ jobs:
 
               cd - > /dev/null || true
             fi
-          done < .gitmodules
+          done < .gitmodules || true
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
