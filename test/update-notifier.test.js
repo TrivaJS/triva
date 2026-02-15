@@ -5,7 +5,6 @@
 
 import {
   checkForUpdates,
-  clearCache,
   getCacheStatus,
   CONFIG
 } from '../lib/utils/update-check.js';

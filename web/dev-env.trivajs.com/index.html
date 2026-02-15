@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triva – The Modern Node.js Framework</title>
+    <meta name="description" content="Build production-ready Node.js applications with zero configuration. Built-in caching, 9 database adapters, and enterprise features out of the box.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" fill="currentColor"/>
+                </svg>
+                <span>Triva</span>
+            </a>
+
+            <div class="nav-links" id="navLinks">
+                <a href="#features">Features</a>
+                <a href="#adapters">Adapters</a>
+                <a href="https://docs.trivajs.com/v1/getting-started" target="_blank">Docs</a>
+                <a href="/showcase">Showcase</a>
+                <a href="https://github.com/trivajs/triva" class="github-link" target="_blank">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+                <a href="https://docs.trivajs.com/v1/getting-started" class="btn-nav">Get Started</a>
+            </div>
+
+            <button class="mobile-menu" id="mobileMenu" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-pulse"></span>
+                    <span>Now in production</span>
+                </div>
+
+                <h1 class="hero-title">
+                    The Framework for
+                    <br>
+                    <span class="gradient-text">Modern Node.js</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    Build production-ready applications with zero configuration.<br>
+                    Built-in caching, 9 database adapters, enterprise features.
+                </p>
+
+                <div class="hero-cta">
+                    <a href="https://docs.trivajs.com/v1/getting-started" class="btn-primary">
+                        Get Started
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    <a href="https://docs.trivajs.com/v1/getting-started" class="btn-secondary">Documentation</a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Dependencies</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-number">9</div>
+                        <div class="stat-label">DB Adapters</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-number">50k+</div>
+                        <div class="stat-label">Req/sec</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Preview -->
+            <div class="hero-visual">
+                <div class="code-window" data-animate="fade-up">
+                    <div class="window-controls">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <div class="code-content">
+<pre><code><span class="token-import">import</span> { build, get, listen } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
+
+<span class="token-comment">// Zero configuration needed</span>
+<span class="token-keyword">await</span> <span class="token-function">build</span>({
+  cache: {
+    type: <span class="token-string">'redis'</span>,
+    database: { host: <span class="token-string">'localhost'</span> }
+  }
+});
+
+<span class="token-comment">// Define your routes</span>
+<span class="token-function">get</span>(<span class="token-string">'/'</span>, (req, res) => {
+  res.<span class="token-function">json</span>({ hello: <span class="token-string">'world'</span> });
+});
+
+<span class="token-comment">// Start your server</span>
+<span class="token-function">listen</span>(<span class="token-number">3000</span>);</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Everything you need. <span class="gradient-text">Built-in.</span></h2>
+                <p>Stop piecing together packages. Start building.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card" data-animate="fade-up">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/>
+                        </svg>
+                    </div>
+                    <h3>Zero Dependencies</h3>
+                    <p>Pure Node.js with no external dependencies. Fast, secure, and maintainable from day one.</p>
+                </div>
+
+                <div class="feature-card" data-animate="fade-up" style="animation-delay: 0.1s">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6M1 12h6m6 0h6"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </div>
+                    <h3>Universal Cache API</h3>
+                    <p>One API, nine adapters. Switch from Redis to MongoDB without changing a line of code.</p>
+                </div>
+
+                <div class="feature-card" data-animate="fade-up" style="animation-delay: 0.2s">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3>Built-in Middleware</h3>
+                    <p>Rate limiting, logging, error tracking, and auto-redirects included by default.</p>
+                </div>
+
+                <div class="feature-card" data-animate="fade-up" style="animation-delay: 0.3s">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>Type Safe</h3>
+                    <p>Full TypeScript support with intelligent type inference. Get autocompletion everywhere.</p>
+                </div>
+
+                <div class="feature-card" data-animate="fade-up" style="animation-delay: 0.4s">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <h3>Production Ready</h3>
+                    <p>Battle-tested monitoring, error tracking, and performance features built-in.</p>
+                </div>
+
+                <div class="feature-card" data-animate="fade-up" style="animation-delay: 0.5s">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h3>Great DX</h3>
+                    <p>Intuitive API, excellent documentation, and helpful error messages that actually help.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Database Adapters Section -->
+    <section class="adapters" id="adapters">
+        <div class="container">
+            <div class="section-header">
+                <h2>One API. <span class="gradient-text">Nine Adapters.</span></h2>
+                <p>Change your database backend without changing your application code.</p>
+            </div>
+
+            <div class="adapter-showcase">
+                <!-- Adapter Tabs -->
+                <div class="adapter-tabs">
+                    <button class="adapter-tab active" data-adapter="redis">
+                        <div class="adapter-tab-icon">
+                           <?xml version="1.0" encoding="UTF-8" standalone="no" ?> <!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools --> <svg width="18px" height="18px" viewBox="0 -18 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid"> <g> <path d="M245.969687,168.943256 C232.308259,176.064479 161.536048,205.163388 146.468577,213.017633 C131.402107,220.873879 123.031844,220.797876 111.129473,215.107699 C99.2271007,209.417521 23.9127473,178.99557 10.3463234,172.511368 C3.56511141,169.270267 0,166.535181 0,163.9511 L0,138.075292 C0,138.075292 98.0490639,116.729625 113.878559,111.051447 C129.707053,105.372269 135.199225,105.167264 148.669646,110.101418 C162.141067,115.036572 242.686583,129.569026 256,134.445178 C256,134.445178 255.993999,157.5559 255.993999,159.954975 C255.996,162.513055 252.923904,165.319143 245.969687,168.943256" fill="#912626"> </path> <path d="M245.964922,143.220067 C232.303935,150.33806 161.534003,179.438032 146.467017,187.292024 C131.401031,195.149018 123.031039,195.072017 111.12905,189.382023 C99.2260618,183.696028 23.9151336,153.269057 10.3491466,146.788063 C-3.21684053,140.303069 -3.50184026,135.840074 9.82514705,130.622079 C23.1511343,125.402084 98.0490629,96.0171117 113.880047,90.3381172 C129.708033,84.6611226 135.199028,84.4541228 148.669014,89.3901181 C162.140002,94.3241134 232.487935,122.325087 245.799922,127.200082 C259.11491,132.081078 259.625908,136.099073 245.964922,143.220067" fill="#C6302B"> </path> <path d="M245.969687,127.074354 C232.308259,134.195577 161.536048,163.294486 146.468577,171.151732 C131.402107,179.004977 123.031844,178.928975 111.129473,173.238797 C99.2261007,167.551619 23.9127473,137.126668 10.3463234,130.642465 C3.56511141,127.401364 0,124.669279 0,122.085199 L0,96.2063895 C0,96.2063895 98.0490639,74.8617226 113.878559,69.182545 C129.707053,63.5043676 135.199225,63.2983612 148.669646,68.2325154 C162.141067,73.1676697 242.686583,87.6971237 256,92.5742761 C256,92.5742761 255.993999,115.684998 255.993999,118.087073 C255.996,120.644153 252.923904,123.450241 245.969687,127.074354" fill="#912626"> </path> <path d="M245.964922,101.351164 C232.303935,108.471157 161.534003,137.569129 146.467017,145.426122 C131.401031,153.280114 123.031039,153.203114 111.12905,147.51312 C99.2260618,141.827125 23.9151336,111.401154 10.3491466,104.91916 C-3.21684053,98.4361664 -3.50184026,93.9721706 9.82514705,88.7521756 C23.1511343,83.5351806 98.0490629,54.1482087 113.880047,48.4702141 C129.708033,42.7922195 135.199028,42.5862197 148.669014,47.521215 C162.140002,52.4552102 232.487935,80.4541835 245.799922,85.3311789 C259.11491,90.2101742 259.625908,94.2301704 245.964922,101.350163 L245.964922,101.351164" fill="#C6302B"> </path> <path d="M245.969687,83.6525661 C232.308259,90.7737887 161.536048,119.873698 146.468577,127.730944 C131.402107,135.585189 123.031844,135.508187 111.129473,129.818008 C99.2261007,124.130831 23.9127473,93.7048802 10.3463234,87.2226777 C3.56511141,83.9805764 0,81.2474909 0,78.6654102 L0,52.7856015 C0,52.7856015 98.0490639,31.4419345 113.878559,25.7637571 C129.707053,20.0845797 135.199225,19.8795733 148.669646,24.8137275 C162.141067,29.7488817 242.686583,44.2783357 256,49.1554881 C256,49.1554881 255.993999,72.2662103 255.993999,74.6672853 C255.996,77.2223652 252.923904,80.0284528 245.969687,83.6525661" fill="#912626"> </path> <path d="M245.964922,57.929387 C232.303935,65.0493802 161.534003,94.1493524 146.467017,102.004345 C131.401031,109.858338 123.031039,109.781338 111.12905,104.093343 C99.2270617,98.4053484 23.9151336,67.9813773 10.3491466,61.4983836 C-3.21684053,55.0153898 -3.50184026,50.550394 9.82514705,45.331399 C23.1511343,40.113404 98.0490629,10.729432 113.880047,5.04943744 C129.708033,-0.629557148 135.199028,-0.833556953 148.669014,4.10143834 C162.140002,9.03643363 232.487935,37.0354069 245.799922,41.9124022 C259.11491,46.7883976 259.625908,50.8093938 245.964922,57.929387" fill="#C6302B"> </path> <path d="M159.282977,32.7570853 L137.273922,35.0422326 L132.346419,46.8976124 L124.387597,33.667969 L98.973147,31.383814 L117.936992,24.5452403 L112.247442,14.0472558 L130.001736,20.9910078 L146.739969,15.5108217 L142.21631,26.3660155 L159.282977,32.7570853" fill="#FFFFFF"> </path> <path d="M131.03169,90.2747287 L89.9546047,73.2378295 L148.815752,64.2034109 L131.03169,90.2747287" fill="#FFFFFF"> </path> <path d="M74.0816124,39.3466047 C91.4568682,39.3466047 105.541829,44.8069457 105.541829,51.5413333 C105.541829,58.2767132 91.4568682,63.736062 74.0816124,63.736062 C56.7073488,63.736062 42.6213953,58.2767132 42.6213953,51.5413333 C42.6213953,44.8069457 56.7073488,39.3466047 74.0816124,39.3466047" fill="#FFFFFF"> </path> <path d="M185.29476,35.9977674 L220.130605,49.7642171 L185.324527,63.5167752 L185.29476,35.9977674" fill="#621B1C"> </path> <path d="M146.754853,51.2426667 L185.29476,35.9977674 L185.324527,63.5167752 L181.546047,64.9952248 L146.754853,51.2426667" fill="#9A2928"> </path> </g> </svg>
+                        </div>
+                        <span>Redis</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="mongodb">
+                        <div class="adapter-tab-icon">
+                           <svg width="18px" height="18px" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"> <circle cx="512" cy="512" r="512" style="fill:#13aa52"/> <path d="M648.86 449.44c-32.34-142.73-108.77-189.66-117-207.59-9-12.65-18.12-35.15-18.12-35.15-.15-.38-.39-1.05-.67-1.7-.93 12.65-1.41 17.53-13.37 30.29-18.52 14.48-113.54 94.21-121.27 256.37-7.21 151.24 109.25 241.36 125 252.85l1.79 1.27v-.11c.1.76 5 36 8.44 73.34H526a726.68 726.68 0 0 1 13-78.53l1-.65a204.48 204.48 0 0 0 20.11-16.45l.72-.65c33.48-30.93 93.67-102.47 93.08-216.53a347.07 347.07 0 0 0-5.05-56.76zM512.35 659.12s0-212.12 7-212.08c5.46 0 12.53 273.61 12.53 273.61-9.72-1.17-19.53-45.03-19.53-61.53z" style="fill:#fff"/> </svg>
+                        </div>
+                        <span>MongoDB</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="postgresql">
+                        <div class="adapter-tab-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" id="Layer_1" x="0" y="0" version="1.1" viewBox="0 0 512 512"><style>.st2{fill:none;stroke:#fff;stroke-width:12.4651;stroke-linecap:round;stroke-linejoin:round}</style><g id="Layer_x0020_3"><path d="M378.5 372.5c3.2-26.9 2.3-30.8 22.3-26.5l5.1.4c15.4.7 35.5-2.5 47.4-8 25.5-11.8 40.6-31.5 15.5-26.4-57.3 11.8-61.2-7.6-61.2-7.6 60.5-89.7 85.8-203.6 63.9-231.5C411.9-3 308.8 33 307.1 33.9l-.5.1c-11.3-2.3-24-3.8-38.2-4-25.9-.4-45.6 6.8-60.5 18.1 0 0-183.8-75.7-175.2 95.2 1.8 36.4 52.1 275.2 112.1 203 21.9-26.4 43.1-48.7 43.1-48.7 10.5 7 23.1 10.6 36.3 9.3l1-.9c-.3 3.3-.2 6.5.4 10.3-15.5 17.3-10.9 20.3-41.8 26.7-31.3 6.4-12.9 17.9-.9 20.9 14.5 3.6 48.2 8.8 70.9-23l-.9 3.6c6.1 4.9 5.7 34.9 6.5 56.3.9 21.4 2.3 41.5 6.7 53.3s9.5 42.2 50.1 33.5c34-7.3 59.9-17.7 62.3-115.1" style="stroke:#000;stroke-width:37.3953"/><path d="M468.7 312.1c-57.3 11.8-61.2-7.6-61.2-7.6C468 214.8 493.3 100.9 471.4 73 411.9-3 308.8 33 307.1 33.9l-.6.1c-11.3-2.3-24-3.7-38.2-4-25.9-.4-45.6 6.8-60.5 18.1 0 0-183.8-75.7-175.2 95.2 1.8 36.4 52.1 275.2 112.1 203 21.9-26.4 43.1-48.7 43.1-48.7 10.5 7 23.1 10.6 36.3 9.3l1-.9c-.3 3.3-.2 6.5.4 10.3-15.5 17.3-10.9 20.3-41.8 26.7-31.3 6.4-12.9 17.9-.9 20.9 14.5 3.6 48.2 8.8 70.9-23l-.9 3.6c6.1 4.9 10.3 31.6 9.6 55.8s-1.2 40.8 3.6 53.8 9.5 42.2 50.1 33.5c33.9-7.3 51.5-26.1 54-57.6 1.7-22.4 5.7-19 5.9-39l3.2-9.5c3.6-30.3.6-40.1 21.5-35.5l5.1.4c15.4.7 35.5-2.5 47.4-8 25.5-11.7 40.5-31.4 15.5-26.3" style="fill:#336791"/><path d="M256.3 329.5c-1.6 56.4.4 113.2 5.9 126.9 5.5 13.8 17.3 40.6 58 31.9 33.9-7.3 46.3-21.4 51.6-52.4 3.9-22.9 11.6-86.4 12.5-99.4M207.6 46.9S23.7-28.3 32.2 142.7c1.8 36.4 52.1 275.2 112.1 203 21.9-26.4 41.8-47.1 41.8-47.1M306.9 33.2c-6.4 2 102.3-39.7 164.1 39.2 21.8 27.9-3.5 141.8-63.9 231.5" class="st2"/><path d="M407 303.9s3.9 19.4 61.2 7.6c25.1-5.2 10 14.5-15.5 26.4-20.9 9.7-67.7 12.2-68.5-1.2-1.9-34.7 24.8-24.2 22.8-32.8-1.7-7.8-13.6-15.5-21.5-34.5-6.9-16.7-94.3-144.4 24.2-125.5 4.3-.9-30.9-112.7-141.8-114.5S160.7 165.8 160.7 165.8" style="fill:none;stroke:#fff;stroke-width:12.4651;stroke-linecap:round;stroke-linejoin:bevel"/><path d="M225.2 315.7c-15.5 17.3-10.9 20.3-41.8 26.7-31.3 6.4-12.9 17.9-.9 20.9 14.5 3.6 48.2 8.8 70.9-23 6.9-9.7 0-25.1-9.5-29.1-4.6-2-10.8-4.4-18.7 4.5" class="st2"/><path d="M224.2 315.4c-1.6-10.2 3.3-22.2 8.6-36.4 7.9-21.2 26.1-42.4 11.5-109.7-10.8-50.1-83.6-10.4-83.6-3.6s3.3 34.5-1.2 66.7c-5.9 42 26.7 77.6 64.3 73.9" class="st2"/><path d="M206.9 164.7c-.3 2.3 4.3 8.5 10.2 9.3 6 .8 11.1-4 11.4-6.3s-4.2-4.9-10.2-5.7c-6-.9-11.1.3-11.4 2.7z" style="fill:#fff;stroke:#fff;stroke-width:4.155"/><path d="M388.4 159.9c.3 2.3-4.2 8.5-10.2 9.3s-11.1-4-11.4-6.3 4.3-4.9 10.2-5.7 11.1.4 11.4 2.7z" style="fill:#fff;stroke:#fff;stroke-width:2.0775"/><path d="M409.8 143.9c1 18.2-3.9 30.6-4.5 50-.9 28.2 13.4 60.4-8.2 92.7" class="st2"/></g></svg>
+                        </div>
+                        <span>PostgreSQL</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="mysql">
+                        <div class="adapter-tab-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 512 512"><path d="M471.6 393.4c-27.9-.7-49.4 2.1-67.6 9.8-5.2 2.1-13.5 2.1-14.3 8.7 2.8 2.8 3.2 7.3 5.6 11.2 4.2 7 11.5 16.3 18.1 21.2 7.3 5.6 14.6 11.1 22.3 16 13.5 8.4 28.9 13.3 42.1 21.6 7.7 4.9 15.3 11.1 23 16.4 3.8 2.8 6.2 7.3 11.1 9.1v-1.1c-2.5-3.1-3.2-7.7-5.6-11.1L496 485c-10.1-13.6-22.7-25.4-36.2-35.2-11.1-7.7-35.5-18.1-40.1-31l-.7-.7c7.7-.7 16.8-3.5 24-5.6 11.8-3.1 22.7-2.4 34.8-5.5 5.6-1.4 11.1-3.2 16.8-4.9V399c-6.3-6.3-10.8-14.6-17.4-20.5-17.7-15.3-37.3-30.3-57.5-42.8-10.8-7-24.7-11.5-36.2-17.4-4.1-2.1-11.1-3.1-13.6-6.6-6.2-7.7-9.8-17.7-14.3-26.8-10.1-19.1-19.8-40.4-28.5-60.6-6.3-13.6-10.1-27.1-17.8-39.7-35.9-59.2-74.9-95-134.8-130.2-12.8-7.5-28.1-10.6-44.5-14.4l-26.1-1.4c-5.6-2.4-11.2-9.1-16-12.2C68 13.9 16.8-13.3 2.2 22.6-7.2 45.2 16.1 67.5 24.1 79c5.9 8 13.6 17.1 17.7 26.1 2.5 5.9 3.1 12.2 5.6 18.5 5.6 15.3 10.8 32.4 18.1 46.7 3.8 7.3 8 15 12.9 21.6 2.8 3.9 7.7 5.6 8.7 11.9-4.9 6.9-5.2 17.4-8 26.1-12.5 39.3-7.6 88.1 10.1 117 5.6 8.7 18.8 27.9 36.5 20.5 15.7-6.3 12.2-26.1 16.7-43.5 1-4.2.4-7 2.4-9.7v.7c4.9 9.7 9.8 19.1 14.3 28.9 10.8 17 29.6 34.8 45.3 46.6 8.3 6.3 15 17.1 25.4 20.9v-1h-.7c-2.1-3.1-5.2-4.5-8-6.9-6.3-6.3-13.2-13.9-18.1-20.9-14.6-19.5-27.5-41.1-39-63.4-5.6-10.8-10.4-22.6-15-33.4-2.1-4.2-2.1-10.4-5.6-12.5-5.2 7.7-12.9 14.3-16.7 23.7-6.6 15-7.3 33.4-9.8 52.6l-1.4.7c-11.1-2.8-15-14.3-19.2-24-10.4-24.7-12.2-64.4-3.1-93 2.4-7.3 12.9-30.3 8.7-37.2-2.1-6.7-9.1-10.5-12.9-15.7-4.5-6.6-9.4-15-12.5-22.3-8.4-19.5-12.6-41.1-21.6-60.6C51 88 43.7 78.6 37.8 70.3c-6.6-9.4-13.9-16-19.2-27.2-1.7-3.8-4.2-10.1-1.4-14.3.7-2.8 2.1-3.8 4.9-4.5 4.5-3.8 17.4 1 21.9 3.1 12.9 5.2 23.7 10.1 34.5 17.4 4.9 3.5 10.1 10.1 16.4 11.9h7.3c11.1 2.4 23.7.7 34.1 3.8 18.4 5.9 35.2 14.6 50.1 24 45.6 28.9 83.2 70 108.6 119.1 4.2 8 5.9 15.3 9.7 23.7 7.3 17.1 16.4 34.5 23.7 51.2 7.3 16.4 14.3 33.1 24.7 46.7 5.2 7.3 26.1 11.1 35.5 15 6.9 3.1 17.8 5.9 24 9.7 11.8 7.3 23.6 15.7 34.8 23.7 5.7 4.1 23.1 12.9 24.2 19.8M116.4 90.8c-4.8 0-9.6.5-14.3 1.8v.7h.7c2.8 5.6 7.7 9.4 11.2 14.3 2.8 5.6 5.2 11.1 8 16.7l.7-.7c4.9-3.5 7.4-9.1 7.4-17.4-2.1-2.5-2.4-4.9-4.2-7.3-2.2-3.6-6.7-5.3-9.5-8.1" style="fill:#5d87a1"/></svg>
+                        </div>
+                        <span>MySQL</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="sqlite">
+                        <div class="adapter-tab-icon">
+                           <svg width="18px" height="18px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><linearGradient id="a" x1="-118.318" y1="45.638" x2="-116.751" y2="45.638" gradientTransform="matrix(0, 11.486, 11.486, 0, -510.889, 1363.307)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#97d9f6"/><stop offset="0.92" stop-color="#0f80cc"/><stop offset="1" stop-color="#0f80cc"/></linearGradient></defs><title>file_type_sqlite</title><path d="M23.192,3.242H5.623A2.147,2.147,0,0,0,3.482,5.383V24.759A2.147,2.147,0,0,0,5.623,26.9H17.195C17.063,21.142,19.03,9.968,23.192,3.242Z" style="fill:#0f80cc"/><path d="M22.554,3.867H5.623A1.518,1.518,0,0,0,4.107,5.383V23.345a42.01,42.01,0,0,1,13.569-2.684A123.555,123.555,0,0,1,22.554,3.867Z" style="fill:url(#a)"/><path d="M27.29,2.608c-1.2-1.073-2.66-.642-4.1.634-.213.19-.426.4-.638.625A25.4,25.4,0,0,0,17.1,15a10.178,10.178,0,0,1,.634,1.822c.036.14.069.272.1.384.062.265.1.437.1.437s-.022-.083-.113-.346l-.059-.17c-.01-.027-.023-.059-.038-.094-.16-.373-.6-1.16-.8-1.5-.167.493-.315.954-.438,1.371a12.131,12.131,0,0,1,.908,2.8s-.03-.115-.171-.515a19.037,19.037,0,0,0-.9-1.708,4.037,4.037,0,0,0-.264,1.724,6.009,6.009,0,0,1,.493,1.383c.334,1.283.566,2.846.566,2.846s.008.1.02.263a26.145,26.145,0,0,0,.065,3.205,11.362,11.362,0,0,0,.584,3.1l.18-.1a13.859,13.859,0,0,1-.478-4.628,35.269,35.269,0,0,1,1.938-9.688c2.01-5.308,4.8-9.568,7.35-11.6-2.326,2.1-5.474,8.9-6.417,11.418a45.656,45.656,0,0,0-2.254,8A6.211,6.211,0,0,1,21.39,20s1.233-1.521,2.674-3.693a26.206,26.206,0,0,0-2.755.733c-.7.294-.889.394-.889.394a23.939,23.939,0,0,1,4.215-2.007c2.676-4.215,5.592-10.2,2.656-12.824" style="fill:#003b57"/></svg>
+                        </div>
+                        <span>SQLite</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="better-sqlite3">
+                        <div class="adapter-tab-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="8 10.52 240 237.48"><defs><linearGradient id="h"><stop offset="0" style="stop-color:#a2a2a2;stop-opacity:1"/><stop offset="1" style="stop-color:#4e4e4e;stop-opacity:1"/></linearGradient><linearGradient id="i"><stop offset="0" style="stop-color:#fff;stop-opacity:1"/><stop offset="1" style="stop-color:#fff;stop-opacity:0"/></linearGradient><linearGradient id="g"><stop offset="0" style="stop-color:#ababab;stop-opacity:1"/><stop offset=".194" style="stop-color:#f6f6f6;stop-opacity:1"/><stop offset=".397" style="stop-color:#b0b0b0;stop-opacity:1"/><stop offset="1" style="stop-color:#585858;stop-opacity:1"/></linearGradient><linearGradient id="d"><stop offset="0" style="stop-color:#ababab;stop-opacity:1"/><stop offset=".194" style="stop-color:#f6f6f6;stop-opacity:1"/><stop offset=".397" style="stop-color:#b0b0b0;stop-opacity:1"/><stop offset="1" style="stop-color:#585858;stop-opacity:1"/></linearGradient><linearGradient id="e"><stop offset="0" style="stop-color:#a2a2a2;stop-opacity:1"/><stop offset="1" style="stop-color:#4e4e4e;stop-opacity:1"/></linearGradient><linearGradient id="f"><stop offset="0" style="stop-color:#fff;stop-opacity:1"/><stop offset="1" style="stop-color:#fff;stop-opacity:0"/></linearGradient><linearGradient id="a"><stop offset="0" style="stop-color:#ababab;stop-opacity:1"/><stop offset=".194" style="stop-color:#f6f6f6;stop-opacity:1"/><stop offset=".397" style="stop-color:#b0b0b0;stop-opacity:1"/><stop offset="1" style="stop-color:#585858;stop-opacity:1"/></linearGradient><linearGradient id="b"><stop offset="0" style="stop-color:#a2a2a2;stop-opacity:1"/><stop offset="1" style="stop-color:#4e4e4e;stop-opacity:1"/></linearGradient><linearGradient id="c"><stop offset="0" style="stop-color:#fff;stop-opacity:1"/><stop offset="1" style="stop-color:#fff;stop-opacity:0"/></linearGradient><linearGradient xlink:href="#a" id="j" x1="10.116" x2="38.013" y1="17.512" y2="17.512" gradientTransform="translate(0 -1.714)" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#b" id="k" x1="24" x2="24" y1="15.149" y2="13.285" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#c" id="l" x1="16.071" x2="16.19" y1="19.5" y2="24.04" gradientTransform="translate(-.143 .929)" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#d" id="m" x1="10.116" x2="38.013" y1="17.512" y2="17.512" gradientTransform="translate(0 -1.714)" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#e" id="n" x1="24" x2="24" y1="15.149" y2="13.285" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#f" id="o" x1="16.071" x2="16.19" y1="19.5" y2="24.04" gradientTransform="translate(-.143 .929)" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#g" id="p" x1="10.116" x2="38.013" y1="17.512" y2="17.512" gradientTransform="translate(0 -1.714)" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#h" id="q" x1="24" x2="24" y1="15.149" y2="13.285" gradientUnits="userSpaceOnUse"/><linearGradient xlink:href="#i" id="r" x1="16.071" x2="16.19" y1="19.5" y2="24.04" gradientTransform="translate(-.143 .929)" gradientUnits="userSpaceOnUse"/></defs><g transform="matrix(8.59688 0 0 6.30047 -78.796 85.965)"><path d="M23.941 8.037c-7.625 0-13.825 2.13-13.825 5.475v6.558c0 3.345 6.2 5.648 13.825 5.648s14.072-2.303 14.072-5.648v-6.558c0-3.345-6.447-5.475-14.072-5.475" style="color:#000;display:block;overflow:visible;visibility:visible;fill:url(#j);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:.769;marker:none"/><ellipse cx="24" cy="14.071" rx="12.857" ry="5.5" style="color:#000;display:block;overflow:visible;visibility:visible;fill:#c3c3c3;fill-opacity:1;fill-rule:nonzero;stroke:url(#k);stroke-width:1.00493;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none" transform="matrix(1.0373 0 0 .95462 -.895 -.076)"/><path d="m13.643 18 .256 5.876 4.672 1.084-.142-5.603s2.071-.04 5.428-.254c-5.216-.233-11.183-2.725-13.214-4.18 1.417 2.093 3 3.077 3 3.077" style="color:#000;display:block;overflow:visible;visibility:visible;opacity:.493671;fill:url(#l);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none"/></g><g transform="matrix(8.59688 0 0 6.30047 -78.967 22.701)"><path d="M23.941 8.036c-7.625 0-13.825 2.131-13.825 5.476v6.558c0 3.345 6.2 5.648 13.825 5.648s14.072-2.303 14.072-5.648v-6.558c0-3.345-6.447-5.476-14.072-5.476" style="color:#000;display:block;overflow:visible;visibility:visible;fill:url(#m);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:.769;marker:none"/><ellipse cx="24" cy="14.071" rx="12.857" ry="5.5" style="color:#000;display:block;overflow:visible;visibility:visible;fill:#c3c3c3;fill-opacity:1;fill-rule:nonzero;stroke:url(#n);stroke-width:1.00493;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none" transform="matrix(1.0373 0 0 .95462 -.895 -.076)"/><path d="m13.643 18 .256 5.876 4.672 1.084-.142-5.603s2.071-.04 5.428-.254c-5.216-.233-11.183-2.725-13.214-4.179 1.417 2.092 3 3.076 3 3.076" style="color:#000;display:block;overflow:visible;visibility:visible;opacity:.493671;fill:url(#o);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none"/></g><g transform="matrix(8.59688 0 0 6.30047 -78.956 -40.054)"><path d="M23.941 8.037c-7.625 0-13.825 2.13-13.825 5.475v6.558c0 3.345 6.2 5.648 13.825 5.648s14.072-2.303 14.072-5.648v-6.558c0-3.345-6.447-5.475-14.072-5.475" style="color:#000;display:block;overflow:visible;visibility:visible;fill:url(#p);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:.769;marker:none"/><ellipse cx="24" cy="14.071" rx="12.857" ry="5.5" style="color:#000;display:block;overflow:visible;visibility:visible;fill:#c3c3c3;fill-opacity:1;fill-rule:nonzero;stroke:url(#q);stroke-width:1.00493;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none" transform="matrix(1.0373 0 0 .95462 -.895 -.076)"/><path d="m13.643 18 .256 5.876 4.672 1.084-.142-5.603s2.071-.04 5.428-.255c-5.216-.233-11.183-2.724-13.214-4.178 1.417 2.093 3 3.076 3 3.076" style="color:#000;display:block;overflow:visible;visibility:visible;opacity:.493671;fill:url(#r);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none"/></g></svg>
+                        </div>
+                        <span>Better SQLite3</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="supabase">
+                        <div class="adapter-tab-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 512 512"><linearGradient id="a" x1="237.109" x2="419.106" y1="223.219" y2="146.89" gradientTransform="matrix(1 0 0 -1 0 513)" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:#249361"/><stop offset="1" style="stop-color:#3ecf8e"/></linearGradient><path d="M297.6 501c-12.9 16.3-39.2 7.4-39.5-13.4L253.6 183h204.8c37.1 0 57.8 42.8 34.7 71.9z" style="fill:url(#a)"/><linearGradient id="b" x1="245.829" x2="328.829" y1="411.681" y2="255.438" gradientTransform="matrix(1 0 0 -1 0 513)" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:#000"/><stop offset="1" style="stop-color:#000;stop-opacity:0"/></linearGradient><path d="M297.6 501c-12.9 16.3-39.2 7.4-39.5-13.4L253.6 183h204.8c37.1 0 57.8 42.8 34.7 71.9z" style="fill:url(#b);fill-opacity:.2"/><path d="M214.4 11c12.9-16.3 39.2-7.4 39.5 13.4l2 304.5H53.7c-37.1 0-57.8-42.8-34.7-71.9z" style="fill:#3ecf8e"/></svg>
+                        </div>
+                        <span>Supabase</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="embedded">
+                        <div class="adapter-tab-icon">
+                           <svg width="18px" height="18px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"> <defs> <linearGradient id="a" x1="127.346" y1="-116.408" x2="125.823" y2="-119.26" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -76.99)" gradientUnits="userSpaceOnUse"> <stop offset="0" stop-color="#ffffff"/> <stop offset="1" stop-color="#ffffff"/> </linearGradient> <linearGradient id="b" x1="127.349" y1="-116.274" x2="125.824" y2="-119.127" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -76.99)" gradientUnits="userSpaceOnUse"> <stop offset="0"/> <stop offset="1" stop-color="#6a6a6a"/> </linearGradient> <linearGradient id="c" x1="126.507" y1="-131.222" x2="128.647" y2="-131.222" gradientTransform="matrix(0.864, 0, 0, -0.864, -90.788, -94.496)" gradientUnits="userSpaceOnUse"> <stop offset="0" stop-color="#e7ebef"/> <stop offset="1" stop-color="#c4ce00"/> </linearGradient> <linearGradient id="d" x1="127.346" y1="-117.409" x2="125.823" y2="-120.262" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -78.528)" xlink:href="#a"/> <linearGradient id="e" x1="127.349" y1="-117.276" x2="125.824" y2="-120.128" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -78.528)" xlink:href="#b"/> <linearGradient id="f" x1="127.346" y1="-118.411" x2="125.823" y2="-121.263" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -80.066)" xlink:href="#a"/> <linearGradient id="g" x1="127.349" y1="-118.277" x2="125.824" y2="-121.13" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -80.066)" xlink:href="#b"/> <linearGradient id="h" x1="127.346" y1="-119.413" x2="125.823" y2="-122.265" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -81.604)" xlink:href="#a"/> <linearGradient id="i" x1="127.349" y1="-119.279" x2="125.824" y2="-122.131" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -81.604)" xlink:href="#b"/> <linearGradient id="j" x1="127.346" y1="-115.406" x2="125.823" y2="-118.258" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -75.452)" xlink:href="#a"/> <linearGradient id="k" x1="127.349" y1="-115.272" x2="125.824" y2="-118.125" gradientTransform="matrix(0.864, 0, 0, -0.864, -81.843, -75.452)" xlink:href="#b"/> </defs> <title>folder_type_server_opened</title> <path d="M27.4,5.5H18.2L16.1,9.7H4.3V26.5H29.5V5.5Zm0,18.7H6.6V11.8H27.4Zm0-14.5H19.2l1-2.1h7.1V9.7Z" style="fill:#7addd3"/> <polygon points="25.7 13.7 0.5 13.7 4.3 26.5 29.5 26.5 25.7 13.7" style="fill:#7addd3"/> <path d="M29.374,12.871c-.189-.039-4.433-1.256-4.66-1.331a1.291,1.291,0,0,0-.642-.038c-.113.038-6.883,4.008-7.11,4.121-.038,0-.038.038-.076.076a.811.811,0,0,0-.264.567v0L16.7,28.009c0,.189.038.264.189.34,0,0,4.912,1.965,5.479,2.116h.076c.264.038.34.038.453-.076l.038-.038c.113-.076,6.416-4.869,6.529-4.982a.573.573,0,0,0,.151-.3c0-.113.177-11.554.177-11.7v-.038a.508.508,0,0,0-.416-.453ZM22.7,30.314v0Zm6.556-16.876a2.313,2.313,0,0,0,.227-.189s-.113.076-.264.189c-.264.189-.6.416-.982.718.642-.453,1.209-.831,1.36-.945A2.41,2.41,0,0,1,29.261,13.438Z" style="fill:#00608b;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.280130076041554px"/> <path d="M24.7,11.5a1.291,1.291,0,0,0-.642-.038c-.113.038-6.867,4.051-7.094,4.2-.189.113-.264.34,0,.453.264.076,5.214,1.7,5.4,1.738a.821.821,0,0,0,.68-.038c.113-.076,6.516-4.453,6.63-4.566s-.111-.314-.27-.367c-.181-.06-4.518-1.346-4.744-1.422l.038.038Z" style="fill:#00608b"/> <path d="M16.66,16.3c0-.189.113-.3.264-.264.113.038,5.441,1.776,5.63,1.927.189.113.3.189.3.34s-.076,11.781-.076,11.932a.235.235,0,0,1-.34.227c-.567-.151-5.479-2.116-5.479-2.116-.151-.076-.189-.151-.189-.34Z" style="fill:#00608b"/> <path d="M22.969,30.389c-.113.076-.235-.013-.235-.226,0-.189.046-11.744.046-11.895a.465.465,0,0,1,.189-.378c.113-.076,6.53-4.528,6.681-4.642s.227.113.189.227c0,.113-.214,11.5-.214,11.616a.285.285,0,0,1-.151.264c-.113.113-6.467,4.958-6.543,5.071l.038-.038Z" style="fill:#00608b"/> <path d="M16.886,15.963c-.038,0,0-.189.113-.3a.828.828,0,0,0-.34.642.236.236,0,0,1,.227-.189c.68.227,5.365,1.851,5.554,1.927s.3.144.3.333l.037.451.068-.459c0-.189.126-.324.352-.475.113-.076,2.969-2.095,3.775-2.815-.766.408-3.8,2.777-4.216,2.777-.321,0-5.831-1.889-5.869-1.889Z" style="fill:#00608b"/> <path d="M26.521,15.4a2.143,2.143,0,0,1,.34-.227Z" style="fill:#00608b"/> <path d="M23,30.365a.46.46,0,0,1-.533.109.279.279,0,0,0,.281-.226s.029.205.252.118Z" style="fill:#00608b"/> <path d="M29.58,13.309c.189-.091.269.007.275.169.027-.167.021-.466-.451-.6,0,0,.379.188.176.428Z" style="fill:#00608b"/> <path d="M29.278,23.842l-4.1,2.976v.151l4.091-3.027.007-.1Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#a)"/> <path d="M29.3,23.719,25.18,26.7v.151l4.1-3.042.019-.094Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#b)"/> <polygon points="18.51 18.444 18.51 18.671 20.362 19.313 20.362 19.124 18.51 18.444 18.51 18.444" style="fill:url(#c)"/> <g style="opacity:0.21999995410442352;isolation:isolate"> <polygon points="18.51 18.671 18.397 18.746 18.397 18.293 20.437 19.011 20.362 19.124 18.51 18.444 18.51 18.671"/> </g> <g style="opacity:0.7200000286102295;isolation:isolate"> <polygon points="20.437 19.464 20.437 19.011 20.362 19.124 20.362 19.313 18.51 18.671 18.397 18.746 20.437 19.464 20.437 19.464" style="fill:#fff"/> </g> <path d="M29.278,23.169l-4.1,2.976V26.3l4.091-3.027.007-.1Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#d)"/> <path d="M29.3,23.047,25.18,26.032v.151l4.1-3.042.019-.094Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#e)"/> <path d="M29.278,22.5l-4.1,2.976v.151L29.271,22.6l.007-.1Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#f)"/> <path d="M29.3,22.374,25.18,25.359v.151l4.1-3.042.019-.094Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#g)"/> <path d="M29.278,21.824,25.18,24.8v.151l4.091-3.027.007-.1Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#h)"/> <path d="M29.3,21.7,25.18,24.687v.151l4.1-3.042L29.3,21.7Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#i)"/> <path d="M29.278,24.514l-4.1,2.976v.151l4.091-3.027.007-.1Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#j)"/> <path d="M29.3,24.392,25.18,27.377v.151l4.1-3.042.019-.094Z" style="opacity:0.12999998033046722;isolation:isolate;fill:url(#k)"/> </svg>
+                        </div>
+                        <span>Embedded</span>
+                    </button>
+                    <button class="adapter-tab" data-adapter="memory">
+                        <div class="adapter-tab-icon">
+                           <svg width="18px" height="18px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M10 6V4M10 20V18M14 6V4M14 20V18M18.2222 10H20M4 10H5.77778M18.2222 14H20M4 14H5.77778M10 10H14V14H10V10ZM7.99998 18H16C17.1046 18 18 17.1046 18 16V8C18 6.89543 17.1046 6 16 6H7.99998C6.89542 6 5.99998 6.89543 5.99998 8V16C5.99998 17.1046 6.89542 18 7.99998 18Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                        </div>
+                        <span>Memory</span>
+                    </button>
+                </div>
+
+                <!-- Code Display -->
+                <div class="adapter-content">
+                    <div class="code-window">
+                        <div class="window-controls">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <div class="code-content">
+<pre><code id="adapterCode"><span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
+
+<span class="token-keyword">await</span> <span class="token-function">build</span>({
+  cache: {
+    type: <span class="token-string">'redis'</span>,
+    database: {
+      host: <span class="token-string">'localhost'</span>,
+      port: <span class="token-number">6379</span>
+    }
+  }
+});</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="adapter-info">
+                        <h4 id="adapterName">Redis</h4>
+                        <ul id="adapterFeatures">
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Sub-millisecond latency
+                            </li>
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Distributed caching
+                            </li>
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Production-grade reliability
+                            </li>
+                        </ul>
+                        <a href="https://docs.trivajs.com/v1/database-and-cache/adapters/redis" class="adapter-link">
+                            Learn more
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to build?</h2>
+                <p>Join developers shipping production applications with Triva.</p>
+                <div class="cta-buttons">
+                    <a href="https://docs.trivajs.com/v1/getting-started" class="btn-primary btn-lg">
+                        Get Started
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/trivajs/triva" class="btn-secondary btn-lg">
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://docs.trivajs.com/v1/getting-started" target="_blank">
+                        <div class="item">Documentation</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Changes</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Benchmarks</div>
+                    </a>
+                    <a href="https://docs.trivajs.com/v1/guides/overview" target="_blank">
+                        <div class="item">Guides</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Examples</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Extensions</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Enterprise</div>
+                    </a>
+                </div>
+                <div class="footer-links">
+                    <a href="" target="_blank">
+                        <div class="item">Privacy Policy</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Terms of Use</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Code of Conduct</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Security Policy</div>
+                    </a>
+                    <a href="" target="_blank">
+                        <div class="item">Issues</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 Triva. MIT License.</p>
+                <div class="footer-social">
+                    <a href="https://twitter.com/trivajs" target="_blank" aria-label="Twitter">
+                        <svg fill="currentColor" width="18" height="18" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M28.778 1.004h-25.56c-0.008-0-0.017-0-0.027-0-1.199 0-2.172 0.964-2.186 2.159v25.672c0.014 1.196 0.987 2.161 2.186 2.161 0.010 0 0.019-0 0.029-0h25.555c0.008 0 0.018 0 0.028 0 1.2 0 2.175-0.963 2.194-2.159l0-0.002v-25.67c-0.019-1.197-0.994-2.161-2.195-2.161-0.010 0-0.019 0-0.029 0h0.001zM9.9 26.562h-4.454v-14.311h4.454zM7.674 10.293c-1.425 0-2.579-1.155-2.579-2.579s1.155-2.579 2.579-2.579c1.424 0 2.579 1.154 2.579 2.578v0c0 0.001 0 0.002 0 0.004 0 1.423-1.154 2.577-2.577 2.577-0.001 0-0.002 0-0.003 0h0zM26.556 26.562h-4.441v-6.959c0-1.66-0.034-3.795-2.314-3.795-2.316 0-2.669 1.806-2.669 3.673v7.082h-4.441v-14.311h4.266v1.951h0.058c0.828-1.395 2.326-2.315 4.039-2.315 0.061 0 0.121 0.001 0.181 0.003l-0.009-0c4.5 0 5.332 2.962 5.332 6.817v7.855z"></path>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/trivajs/triva" target="_blank" aria-label="GitHub">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="./script.js"></script>
+</body>
+</html>

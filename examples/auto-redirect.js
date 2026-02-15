@@ -9,7 +9,7 @@ async function main() {
   // Example 1: Simple redirect for AI traffic
   await build({
     env: 'production',
-    
+
     // Redirect AI/LLM traffic to specialized endpoint
     redirects: {
       enabled: true,
@@ -22,7 +22,7 @@ async function main() {
       bypassThrottle: true,          // Skip throttling for redirected traffic
       logRedirects: true             // Log for debugging
     },
-    
+
     // Throttling still applies to non-redirected traffic
     throttle: {
       limit: 100,
@@ -70,14 +70,14 @@ async function customRulesExample() {
         {
           name: 'Block admin scrapers',
           condition: (req) => {
-            return req.url.startsWith('/admin') && 
+            return req.url.startsWith('/admin') &&
                    /scraper|bot|crawler/i.test(req.headers['user-agent']);
           },
           destination: '/forbidden',
           statusCode: 403,
           bypassThrottle: false  // Still apply throttling
         },
-        
+
         // Rule 2: Redirect old API clients
         {
           name: 'Redirect legacy clients',
@@ -87,7 +87,7 @@ async function customRulesExample() {
           destination: (req) => '/v2' + req.url,
           statusCode: 301  // Permanent redirect
         },
-        
+
         // Rule 3: Route AI requests to separate infrastructure
         {
           name: 'AI infrastructure routing',
@@ -99,7 +99,7 @@ async function customRulesExample() {
           statusCode: 307,  // Temporary redirect (preserve method)
           bypassThrottle: true
         },
-        
+
         // Rule 4: Detect unusual patterns
         {
           name: 'Unusual traffic patterns',
@@ -110,8 +110,8 @@ async function customRulesExample() {
               /<script>/i,          // XSS attempt
               /\.\.\/\.\.\//,       // Path traversal
             ];
-            
-            return suspiciousPatterns.some(pattern => 
+
+            return suspiciousPatterns.some(pattern =>
               pattern.test(req.url) || pattern.test(req.headers['user-agent'])
             );
           },
@@ -119,13 +119,13 @@ async function customRulesExample() {
           statusCode: 403
         }
       ],
-      
+
       // Fallback: redirect other bots
       redirectBots: true,
       destination: 'https://bots.example.com',
       logRedirects: true
     },
-    
+
     throttle: {
       limit: 100,
       window_ms: 60000
@@ -141,7 +141,7 @@ async function customRulesExample() {
   });
 
   get('/security-warning', (req, res) => {
-    res.status(403).json({ 
+    res.status(403).json({
       error: 'Suspicious activity detected',
       message: 'Your request has been logged'
     });
@@ -159,30 +159,30 @@ async function categoryRoutingExample() {
       redirectAI: true,
       redirectBots: true,
       redirectCrawlers: true,
-      
+
       // Different destinations based on detection
       destination: (req) => {
         const ua = req.headers['user-agent'] || '';
-        
+
         // AI traffic → AI-specific infrastructure
         if (/GPTBot|Claude|Gemini|Anthropic/i.test(ua)) {
           return 'https://ai.example.com' + req.url;
         }
-        
+
         // Search bots → SEO-optimized version
         if (/Googlebot|Bingbot|Baiduspider/i.test(ua)) {
           return 'https://seo.example.com' + req.url;
         }
-        
+
         // Archive crawlers → static version
         if (/archive\.org|Wayback/i.test(ua)) {
           return 'https://static.example.com' + req.url;
         }
-        
+
         // Default bot destination
         return 'https://bots.example.com';
       },
-      
+
       statusCode: 302,
       bypassThrottle: true,
       logRedirects: true
@@ -193,7 +193,7 @@ async function categoryRoutingExample() {
 // Run main example
 main().catch(console.error);
 
-// Uncomment to try other examples:
-// dynamicExample().catch(console.error);
-// customRulesExample().catch(console.error);
-// categoryRoutingExample().catch(console.error);
+// Comment to hide these examples:
+dynamicExample().catch(console.error);
+customRulesExample().catch(console.error);
+categoryRoutingExample().catch(console.error);
