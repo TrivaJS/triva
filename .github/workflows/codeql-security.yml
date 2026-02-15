@@ -169,17 +169,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Don't specify cache - will be handled manually
       
       # Install dependencies first (required for SBOM generation)
-      - name: Install dependencies
+      - name: Install dependencies and generate lock file
         run: |
+          echo "## Dependency Installation" >> $GITHUB_STEP_SUMMARY
+          
           if [ -f package-lock.json ]; then
+            echo "✅ package-lock.json exists, using npm ci" >> $GITHUB_STEP_SUMMARY
             npm ci
           elif [ -f package.json ]; then
+            echo "⚠️ No package-lock.json found, generating one" >> $GITHUB_STEP_SUMMARY
             npm install
+            echo "✅ Generated package-lock.json" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No package.json found, skipping dependency installation"
+            echo "❌ No package.json found, skipping" >> $GITHUB_STEP_SUMMARY
+            exit 0
           fi
       
       # Generate SBOM (Software Bill of Materials)
@@ -187,7 +193,7 @@ jobs:
         run: |
           npm install -g @cyclonedx/cyclonedx-npm
           
-          # Check if we have the required files
+          # Double-check we have the required files
           if [ ! -f package-lock.json ] && [ ! -d node_modules ]; then
             echo "⚠️ Warning: No package-lock.json or node_modules found" >> $GITHUB_STEP_SUMMARY
             echo "SBOM generation skipped - no dependency evidence" >> $GITHUB_STEP_SUMMARY
