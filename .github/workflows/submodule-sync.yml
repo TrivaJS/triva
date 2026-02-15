@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,15 +19,17 @@ jobs:
     outputs:
       outdated-submodules: ${{ steps.check.outputs.outdated }}
       has-outdated: ${{ steps.check.outputs.has_outdated }}
+      skipped-submodules: ${{ steps.check.outputs.skipped }}
       comment-id: ${{ steps.comment.outputs.comment-id }}
 
     steps:
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          submodules: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          submodules: recursive
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for .gitmodules file
         id: has-submodules
@@ -45,7 +48,9 @@ jobs:
         run: |
           # Initialize arrays
           outdated_modules=()
+          skipped_modules=()
           all_modules=()
+          accessible_modules=0
 
           # Parse .gitmodules to get all submodules
           while IFS= read -r line; do
@@ -58,31 +63,87 @@ jobs:
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
               echo "📦 Checking: $submodule_name ($submodule_path)"
 
+              # Check if submodule directory exists
+              if [ ! -d "$submodule_path" ]; then
+                echo "   ⚠️  Directory not found - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Directory not found")
+                continue
+              fi
+
               # Enter submodule directory
-              cd "$submodule_path" || continue
+              if ! cd "$submodule_path" 2>/dev/null; then
+                echo "   ⚠️  Cannot access directory - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Cannot access directory")
+                continue
+              fi
+
+              # Check if it's a valid git repository
+              if ! git rev-parse --git-dir > /dev/null 2>&1; then
+                echo "   ⚠️  Not a valid git repository - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Not a git repository")
+                cd - > /dev/null
+                continue
+              fi
 
               # Get current commit
-              current_commit=$(git rev-parse HEAD)
+              if ! current_commit=$(git rev-parse HEAD 2>/dev/null); then
+                echo "   ⚠️  Cannot determine current commit - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Cannot determine commit")
+                cd - > /dev/null
+                continue
+              fi
               echo "   Current commit: $current_commit"
 
-              # Fetch latest from remote
-              git fetch origin --quiet
+              # Try to fetch latest from remote
+              echo "   Fetching from remote..."
+              if ! git fetch origin --quiet 2>/dev/null; then
+                echo "   ⚠️  Cannot fetch from remote (possibly private or not accessible) - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Cannot fetch (private/inaccessible)")
+                cd - > /dev/null
+                continue
+              fi
 
               # Get the default branch name
-              default_branch=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+              if ! default_branch=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | cut -d' ' -f5); then
+                echo "   ⚠️  Cannot determine default branch - trying 'main' and 'master'"
+                
+                # Try common branch names
+                if git rev-parse origin/main >/dev/null 2>&1; then
+                  default_branch="main"
+                elif git rev-parse origin/master >/dev/null 2>&1; then
+                  default_branch="master"
+                else
+                  echo "   ⚠️  Cannot find default branch - skipping"
+                  skipped_modules+=("${submodule_path}|${submodule_name}|Cannot determine default branch")
+                  cd - > /dev/null
+                  continue
+                fi
+              fi
               echo "   Default branch: $default_branch"
 
               # Get latest commit on default branch
-              latest_commit=$(git rev-parse origin/$default_branch)
+              if ! latest_commit=$(git rev-parse origin/$default_branch 2>/dev/null); then
+                echo "   ⚠️  Cannot determine latest commit - skipping"
+                skipped_modules+=("${submodule_path}|${submodule_name}|Cannot determine latest commit")
+                cd - > /dev/null
+                continue
+              fi
               echo "   Latest commit: $latest_commit"
+
+              # Successfully accessed - increment counter
+              ((accessible_modules++))
 
               # Compare commits
               if [ "$current_commit" != "$latest_commit" ]; then
                 echo "   ⚠️  OUTDATED - Updates available!"
 
                 # Get number of commits behind
-                commits_behind=$(git rev-list --count HEAD..origin/$default_branch)
-                echo "   📊 $commits_behind commit(s) behind"
+                if commits_behind=$(git rev-list --count HEAD..origin/$default_branch 2>/dev/null); then
+                  echo "   📊 $commits_behind commit(s) behind"
+                else
+                  commits_behind="unknown"
+                  echo "   📊 Commit count unknown"
+                fi
 
                 # Add to outdated list
                 outdated_entry="${submodule_path}|${submodule_name}|${current_commit}|${latest_commit}|${commits_behind}|${default_branch}"
@@ -96,12 +157,21 @@ jobs:
           done < .gitmodules
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📊 Summary:"
+          echo "   Total submodules: ${#all_modules[@]}"
+          echo "   Accessible: $accessible_modules"
+          echo "   Skipped: ${#skipped_modules[@]}"
+          echo "   Outdated: ${#outdated_modules[@]}"
 
-          # Create outputs
+          # Create outputs for outdated submodules
           if [ ${#outdated_modules[@]} -eq 0 ]; then
             echo "has_outdated=false" >> $GITHUB_OUTPUT
             echo "outdated=" >> $GITHUB_OUTPUT
-            echo "✅ All ${#all_modules[@]} submodule(s) are up to date!"
+            
+            if [ $accessible_modules -gt 0 ]; then
+              echo "✅ All $accessible_modules accessible submodule(s) are up to date!"
+            fi
           else
             echo "has_outdated=true" >> $GITHUB_OUTPUT
 
@@ -116,257 +186,130 @@ jobs:
             echo "⚠️  Found ${#outdated_modules[@]} outdated submodule(s)"
           fi
 
+          # Create outputs for skipped submodules
+          if [ ${#skipped_modules[@]} -gt 0 ]; then
+            skipped_json=$(printf '%s\n' "${skipped_modules[@]}" | jq -R . | jq -s -c .)
+            
+            echo "skipped<<EOF" >> $GITHUB_OUTPUT
+            echo "$skipped_json" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            
+            echo "ℹ️  Skipped ${#skipped_modules[@]} submodule(s) (private/inaccessible)"
+          else
+            echo "skipped=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create or update PR comment
         id: comment
-        if: github.event_name == 'pull_request'
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.has-submodules.outputs.exists == 'true'
         uses: actions/github-script@v7
         with:
           script: |
+            const outdated = JSON.parse('${{ steps.check.outputs.outdated }}' || '[]');
+            const skipped = JSON.parse('${{ steps.check.outputs.skipped }}' || '[]');
+            const hasOutdated = '${{ steps.check.outputs.has_outdated }}' === 'true';
+            
+            let body = '## 🔄 Submodule Sync Check\n\n';
+            
+            if (!hasOutdated && skipped.length === 0) {
+              body += '✅ **All submodules are up to date!**\n\n';
+              body += '---\n';
+              body += '*This check runs automatically on PR updates.*';
+            } else {
+              if (hasOutdated) {
+                body += '⚠️ **Outdated Submodules Detected**\n\n';
+                body += 'The following submodules are behind their remote repositories:\n\n';
+                body += '| Submodule | Current | Latest | Commits Behind | Branch |\n';
+                body += '|-----------|---------|--------|----------------|--------|\n';
+                
+                outdated.forEach(entry => {
+                  const [path, name, current, latest, behind, branch] = entry.split('|');
+                  const currentShort = current.substring(0, 7);
+                  const latestShort = latest.substring(0, 7);
+                  body += `| \`${path}\` | \`${currentShort}\` | \`${latestShort}\` | ${behind} | ${branch} |\n`;
+                });
+                
+                body += '\n### 🔧 How to Update\n\n';
+                body += '```bash\n';
+                body += 'git submodule update --remote\n';
+                body += 'git add .\n';
+                body += 'git commit -m "chore: update submodules"\n';
+                body += '```\n\n';
+              }
+              
+              if (skipped.length > 0) {
+                body += '### ℹ️ Skipped Submodules\n\n';
+                body += 'The following submodules were skipped (likely private or inaccessible):\n\n';
+                body += '| Submodule | Reason |\n';
+                body += '|-----------|--------|\n';
+                
+                skipped.forEach(entry => {
+                  const [path, name, reason] = entry.split('|');
+                  body += `| \`${path}\` | ${reason} |\n`;
+                });
+                
+                body += '\n*Private submodules are automatically skipped and do not affect the workflow.*\n\n';
+              }
+              
+              body += '---\n';
+              body += '*This check runs automatically on PR updates.*';
+            }
+            
+            // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
+              issue_number: context.issue.number,
             });
-
-            // Find existing bot comment with unique marker
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('<!-- submodule-sync-status -->')
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🔄 Submodule Sync Check')
             );
-
-            const hasOutdated = '${{ steps.check.outputs.has_outdated }}' === 'true';
-            const outdatedData = ${{ steps.check.outputs.outdated || '[]' }};
-
-            // Build comment body
-            let commentBody = '<!-- submodule-sync-status -->\n';
-            commentBody += '## 🔄 Submodule Sync Status\n\n';
-
-            if (!hasOutdated) {
-              commentBody += '✅ **All submodules are up to date!**\n\n';
-              commentBody += `Checked: ${new Date().toISOString()}\n`;
-            } else {
-              commentBody += '⚠️ **Outdated Submodules Detected**\n\n';
-              commentBody += `${outdatedData.length} submodule(s) need updating:\n\n`;
-
-              commentBody += '| Submodule | Status | Behind | Actions |\n';
-              commentBody += '|-----------|--------|--------|----------|\n';
-
-              outdatedData.forEach(entry => {
-                const [path, name, current, latest, behind, branch] = entry.split('|');
-                const shortCurrent = current.substring(0, 7);
-                const shortLatest = latest.substring(0, 7);
-                commentBody += `| **${name}**<br/>\`${path}\` | \`${shortCurrent}\` → \`${shortLatest}\` | ${behind} commits | ⏸️ Awaiting approval |\n`;
-              });
-
-              commentBody += '\n### 📋 Next Steps\n\n';
-              commentBody += '1. Go to the **Actions** tab\n';
-              commentBody += '2. Find the "Submodule Sync Check" workflow\n';
-              commentBody += '3. Approve each submodule update individually\n\n';
-              commentBody += '> ⚠️ **Manual approval required** for each submodule\n';
-            }
-
-            commentBody += `\n---\n*Last updated: ${new Date().toISOString()}*`;
-
-            let comment;
+            
             if (botComment) {
               // Update existing comment
-              comment = await github.rest.issues.updateComment({
+              await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: botComment.id,
-                body: commentBody
+                body: body
               });
-              console.log('Updated existing comment:', botComment.id);
+              core.setOutput('comment-id', botComment.id);
             } else {
               // Create new comment
-              comment = await github.rest.issues.createComment({
+              const { data: comment } = await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: commentBody
+                issue_number: context.issue.number,
+                body: body
               });
-              console.log('Created new comment:', comment.data.id);
+              core.setOutput('comment-id', comment.id);
             }
 
-            core.setOutput('comment-id', comment.data.id);
-
-  prepare-matrix:
-    name: Prepare Update Jobs
-    runs-on: ubuntu-latest
-    needs: check-submodules
-    if: needs.check-submodules.outputs.has-outdated == 'true'
-    outputs:
-      matrix: ${{ steps.create-matrix.outputs.matrix }}
-
-    steps:
-      - name: Create matrix from outdated submodules
-        id: create-matrix
+      - name: Summary
+        if: always()
         run: |
-          outdated='${{ needs.check-submodules.outputs.outdated-submodules }}'
-
-          matrix=$(echo "$outdated" | jq -c 'map(split("|") | {
-            path: .[0],
-            name: .[1],
-            current: .[2],
-            latest: .[3],
-            behind: .[4],
-            branch: .[5]
-          })')
-
-          echo "matrix={\"include\":$matrix}" >> $GITHUB_OUTPUT
-
-  sync-submodule:
-    name: Update ${{ matrix.name }}
-    runs-on: ubuntu-latest
-    needs: [check-submodules, prepare-matrix]
-    if: needs.check-submodules.outputs.has-outdated == 'true'
-    strategy:
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
-      fail-fast: false
-
-    environment:
-      name: submodule-update-approval
-      url: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
-
-    steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          submodules: true
-          token: ${{ secrets.ADMIN_BOT_TOKEN }}
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          # === ADMIN BOT IDENTITY ===
-          # Replace these with your admin bot account details
-          # Format: "Bot Name" and "bot-username"
-          git config user.name "Trvia-Admin"
-          git config user.email "triva-admin@users.noreply.github.com"
-          # === END ADMIN BOT IDENTITY ===
-
-      - name: Update submodule to latest
-        id: update
-        run: |
-          echo "📦 Updating: ${{ matrix.name }}"
-          echo "   Path: ${{ matrix.path }}"
-          echo "   From: ${{ matrix.current }}"
-          echo "   To: ${{ matrix.latest }}"
-
-          cd "${{ matrix.path }}"
-          git fetch origin
-          git checkout origin/${{ matrix.branch }}
-          new_commit=$(git rev-parse HEAD)
-          echo "new_commit=$new_commit" >> $GITHUB_OUTPUT
-          cd -
-
-          git add "${{ matrix.path }}"
-
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(submodules): update ${{ matrix.name }} to latest" \
-              -m "Submodule: ${{ matrix.name }}" \
-              -m "Path: ${{ matrix.path }}" \
-              -m "Updated: ${{ matrix.current }} → ${new_commit}" \
-              -m "Commits behind: ${{ matrix.behind }}" \
-              -m "Branch: ${{ matrix.branch }}" \
-              -m "" \
-              -m "Co-authored-by: Trvia-Admin <triva-admin@users.noreply.github.com>"
-
-            git push
-            echo "✅ Updated and pushed!"
+          echo "# Submodule Sync Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check.outputs.has_outdated }}" == "true" ]; then
+            echo "⚠️ **Status:** Outdated submodules found" >> $GITHUB_STEP_SUMMARY
           else
-            echo "ℹ️  No changes"
+            echo "✅ **Status:** All accessible submodules up to date" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -n "${{ steps.check.outputs.skipped }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ Some submodules were skipped (private/inaccessible)" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Update PR comment
-        uses: actions/github-script@v7
-        if: success()
-        with:
-          script: |
-            const commentId = '${{ needs.check-submodules.outputs.comment-id }}';
-
-            if (!commentId || commentId === '') {
-              console.log('No comment ID found, skipping update');
-              return;
-            }
-
-            try {
-              const { data: comment } = await github.rest.issues.getComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: commentId
-              });
-
-              // Replace the specific row for this submodule
-              const oldRow = `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ matrix.latest }}\` | ${{ matrix.behind }} commits | ⏸️ Awaiting approval |`;
-              const newRow = `| **${{ matrix.name }}**<br/>\`${{ matrix.path }}\` | \`${{ matrix.current }}\` → \`${{ steps.update.outputs.new_commit }}\` | ${{ matrix.behind }} commits | ✅ Updated |`;
-
-              const updatedBody = comment.body.replace(oldRow, newRow);
-
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: commentId,
-                body: updatedBody
-              });
-
-              console.log('Updated comment for submodule: ${{ matrix.name }}');
-            } catch (error) {
-              console.log('Error updating comment:', error.message);
-            }
-
-  finalize:
-    name: Finalize Status
-    runs-on: ubuntu-latest
-    needs: [check-submodules, sync-submodule]
-    if: always() && needs.check-submodules.outputs.has-outdated == 'true' && github.event_name == 'pull_request'
-
-    steps:
-      - name: Update final comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const commentId = '${{ needs.check-submodules.outputs.comment-id }}';
-            const result = '${{ needs.sync-submodule.result }}';
-
-            if (!commentId || commentId === '') {
-              console.log('No comment ID found, skipping update');
-              return;
-            }
-
-            try {
-              const { data: comment } = await github.rest.issues.getComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: commentId
-              });
-
-              // Remove any existing status section
-              let bodyWithoutStatus = comment.body.replace(/\n\n---\n\n[✅⏸️⏭️⚠️].*$/s, '');
-
-              // Add new status
-              let status = '\n\n---\n\n';
-              if (result === 'success') {
-                status += '✅ **All submodules updated successfully!**';
-              } else if (result === 'cancelled') {
-                status += '⏸️ **Updates cancelled** - Re-run workflow to try again';
-              } else if (result === 'skipped') {
-                status += '⏭️ **Updates skipped** - Manual approval not provided';
-              } else {
-                status += '⚠️ **Some updates failed** - Check workflow logs';
-              }
-
-              status += `\n\n*Completed: ${new Date().toISOString()}*`;
-
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: commentId,
-                body: bodyWithoutStatus + status
-              });
-
-              console.log('Final status updated');
-            } catch (error) {
-              console.log('Error updating final comment:', error.message);
-            }
+      # Optional: Fail the workflow if outdated submodules are found
+      # Uncomment the following step if you want the workflow to fail
+      # - name: Fail if outdated
+      #   if: steps.check.outputs.has_outdated == 'true'
+      #   run: |
+      #     echo "::error::Outdated submodules detected"
+      #     exit 1

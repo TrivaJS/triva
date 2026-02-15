@@ -45,7 +45,12 @@
     "example:postgresql": "node examples/postgresql.js",
     "example:supabase": "node examples/supabase.js",
     "example:enterprise": "node examples/enterprise.js",
-    "example:redirect": "node examples/auto-redirect.js"
+    "example:redirect": "node examples/auto-redirect.js",
+    "test:coverage": "c8 npm test",
+    "test:watch": "node --watch scripts/test.js",
+    "prepublishOnly": "npm test && npm run benchmark",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:check": "npm run security:audit && npm run test"
   },
   "keywords": [
     "http",

@@ -169,15 +169,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+      
+      # Install dependencies first (required for SBOM generation)
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          else
+            echo "No package.json found, skipping dependency installation"
+          fi
       
       # Generate SBOM (Software Bill of Materials)
       - name: Generate SBOM
         run: |
           npm install -g @cyclonedx/cyclonedx-npm
+          
+          # Check if we have the required files
+          if [ ! -f package-lock.json ] && [ ! -d node_modules ]; then
+            echo "⚠️ Warning: No package-lock.json or node_modules found" >> $GITHUB_STEP_SUMMARY
+            echo "SBOM generation skipped - no dependency evidence" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          # Generate SBOM
           cyclonedx-npm --output-file sbom.json
           
           echo "## SBOM Generated" >> $GITHUB_STEP_SUMMARY
-          echo "Software Bill of Materials created" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Software Bill of Materials created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show component count
+          if [ -f sbom.json ]; then
+            COMPONENT_COUNT=$(jq '.components | length' sbom.json || echo "0")
+            echo "- Components: $COMPONENT_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
       
       # Check for typosquatting in dependencies
       - name: Check for typosquatting
