@@ -7,12 +7,3 @@
 [submodule "docs"]
 	path = docs
 	url = https://github.com/TrivaJS/docs
-[submodule "web/en.trivajs.com"]
-	path = web/en.trivajs.com
-	url = https://github.com/TrivaJS/en.trivajs.com
-[submodule "web/es.trivajs.com"]
-	path = web/es.trivajs.com
-	url = https://github.com/TrivaJS/es.trivajs.com
-[submodule "web/fr.trivajs.com"]
-	path = web/fr.trivajs.com
-	url = https://github.com/TrivaJS/fr.trivajs.com
