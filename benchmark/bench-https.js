@@ -183,7 +183,7 @@ async function runBenchmark() {
         hostname: 'localhost',
         port: PORT,
         path: '/large',
-        rejectUnauthorized: false
+        ca: fs.readFileSync('./cert.pem')
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
