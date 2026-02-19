@@ -28,6 +28,9 @@ function ensureCertificates() {
   }
 }
 
+// Load test certificate to trust the local HTTPS server
+const ca = fs.readFileSync('./cert.pem');
+
 async function runBenchmark() {
   console.log('========================================');
   console.log('  Triva HTTPS Server Benchmark');
@@ -136,7 +139,7 @@ async function runBenchmark() {
         hostname: 'localhost',
         port: PORT,
         path: '/text',
-        rejectUnauthorized: false
+        ca
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
