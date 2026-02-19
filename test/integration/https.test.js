@@ -15,7 +15,7 @@ import { build } from '../../lib/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 9996;
-let server, certDir, keyPath, certPath;
+let server, certDir, keyPath, certPath, caCert;
 
 function makeRequest(method, reqPath, body = null) {
   return new Promise((resolve, reject) => {
@@ -24,7 +24,7 @@ function makeRequest(method, reqPath, body = null) {
       port:                PORT,
       path:                reqPath,
       method,
-      rejectUnauthorized:  false,
+      ca:                  caCert,
       headers: body ? { 'Content-Type': 'application/json' } : {}
     };
 
@@ -53,6 +53,7 @@ const tests = {
         `-subj "/CN=localhost" -keyout "${keyPath}" -out "${certPath}" -days 1`,
         { stdio: 'pipe' }
       );
+      caCert = fs.readFileSync(certPath);
     } catch {
       throw new Error('OpenSSL not available. Install OpenSSL to run HTTPS tests.');
     }
