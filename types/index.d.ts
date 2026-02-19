@@ -32,9 +32,6 @@ export interface ServerOptions {
    */
   retention?: RetentionOptions;
 
-  /** HTTP redirect rules */
-  redirects?: RedirectOptions;
-
   /** Error tracking configuration */
   errorTracking?: ErrorTrackingOptions | boolean;
 
@@ -189,14 +186,6 @@ export interface RetentionOptions {
   enabled?: boolean;
   /** Maximum number of log entries to keep in memory. Default: 100000 */
   maxEntries?: number;
-}
-
-// ─── Redirect Options ─────────────────────────────────────────────────────────
-
-export interface RedirectOptions {
-  /** Enable redirect middleware */
-  enabled?: boolean;
-  rules?: Array<{ from: string; to: string; code?: number }>;
 }
 
 // ─── Error Tracking Options ───────────────────────────────────────────────────
