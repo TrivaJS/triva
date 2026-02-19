@@ -4,13 +4,13 @@
  * UA helpers: isAI, isBot, isCrawler replace the old redirects config
  */
 
-import { build, get, post, use, listen, cache, cookieParser, isAI, isBot, isCrawler } from 'triva';
+import { build, cache, cookieParser, isAI, isBot, isCrawler } from 'triva';
 
 console.log('🎯 Centralized Configuration Demo\n');
 
 // ─── All configuration in build() ────────────────────────────────────────────
 
-await build({
+const instanceBuild = new build({
   env: 'development',
 
   cache: {
@@ -44,24 +44,26 @@ console.log('✅ Server configured with centralized settings\n');
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-use(cookieParser());
+instanceBuild.use(cookieParser());
 
-use((req, res, next) => {
+instanceBuild.use(async (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
 // Lightweight UA-based routing — no config bloat, full developer control
-use((req, res, next) => {
+ instanceBuild.use(async (req, res, next) => {
   const ua = req.headers['user-agent'] || '';
-  if (isAI(ua))      return res.redirect('https://ai.example.com' + req.url, 302);
-  if (isBot(ua) && req.url.startsWith('/secure')) return res.status(403).json({ error: 'Forbidden' });
+  if (await isAI(ua))
+    return res.redirect('https://ai.example.com' + req.url, 302);
+  if ((await isBot(ua)) && req.url.startsWith('/secure'))
+    return res.status(403).json({ error: 'Forbidden' });
   next();
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-get('/', (req, res) => {
+instanceBuild.get('/', (req, res) => {
   res.json({
     message: 'Centralized configuration working!',
     config: {
@@ -80,14 +82,14 @@ get('/', (req, res) => {
   });
 });
 
-get('/api/cache', async (req, res) => {
+instanceBuild.get('/api/cache', async (req, res) => {
   await cache.set('demo:key', { data: 'cached value' }, 60000);
   const cached = await cache.get('demo:key');
   const stats  = await cache.stats();
   res.json({ message: 'Cache test', cached, stats });
 });
 
-get('/api/throttle', (req, res) => {
+instanceBuild.get('/api/throttle', (req, res) => {
   res.json({
     message: 'Throttle check passed',
     throttle: req.triva?.throttle
@@ -95,23 +97,23 @@ get('/api/throttle', (req, res) => {
 });
 
 // UA detection — using the new isAI / isBot / isCrawler imports
-get('/api/ua', (req, res) => {
+instanceBuild.get('/api/ua', (req, res) => {
   const ua = req.query.ua || req.headers['user-agent'] || '';
   res.json({ ua, isAI: isAI(ua), isBot: isBot(ua), isCrawler: isCrawler(ua) });
 });
 
-get('/api/error', (req, res) => {
+instanceBuild.get('/api/error', (req, res) => {
   throw new Error('Test error for tracking');
 });
 
-post('/echo', async (req, res) => {
+instanceBuild.post('/echo', async (req, res) => {
   const body = await req.json();
   res.json({ echo: body });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-listen(3000, () => {
+instanceBuild.listen(3000, () => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✅ Server Running with Centralized Configuration');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

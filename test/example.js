@@ -6,12 +6,6 @@
 
 import {
   build,
-  use,
-  get,
-  post,
-  all,
-  route,
-  listen,
   cookieParser,
   isAI,
   isBot,
@@ -22,7 +16,7 @@ console.log('🚀 Triva Example Server\n');
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 
-await build({
+const instanceBuild = new build({
   env:   'development',
   cache: { type: 'memory', retention: 600000 },
   throttle: {
@@ -35,25 +29,25 @@ await build({
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-use(cookieParser());
+instanceBuild.use(cookieParser());
 
 // Request logger
-use((req, res, next) => {
+instanceBuild.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
 // UA-based redirect middleware (replaces the old redirects: {} config)
 // Developers compose this with isAI / isBot / isCrawler — no config overhead.
-use((req, res, next) => {
+instanceBuild.use(async (req, res, next) => {
   const ua = req.headers['user-agent'] || '';
 
-  if (isAI(ua)) {
+  if (await isAI(ua)) {
     // Route AI scrapers to a dedicated endpoint or external site
     return res.redirect('https://ai.example.com' + req.url, 302);
   }
 
-  if (isCrawler(ua) && req.url.startsWith('/private')) {
+  if (await isCrawler(ua) && req.url.startsWith('/private')) {
     return res.status(403).json({ error: 'Crawlers are not permitted here' });
   }
 
@@ -62,7 +56,7 @@ use((req, res, next) => {
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-get('/', (req, res) => {
+instanceBuild.get('/', (req, res) => {
   res.json({
     message: 'Triva is working!',
     endpoints: {
@@ -77,26 +71,26 @@ get('/', (req, res) => {
   });
 });
 
-get('/hello', (req, res) => {
+instanceBuild.get('/hello', (req, res) => {
   const name = req.query.name || 'World';
   res.json({ message: `Hello, ${name}!` });
 });
 
-get('/users/:id', (req, res) => {
+instanceBuild.get('/users/:id', (req, res) => {
   res.json({ userId: req.params.id, name: 'Test User' });
 });
 
-get('/cookies/set', (req, res) => {
+instanceBuild.get('/cookies/set', (req, res) => {
   res.cookie('test', 'value123', { maxAge: 3600000 });
   res.json({ message: 'Cookie set' });
 });
 
-get('/cookies/get', (req, res) => {
+instanceBuild.get('/cookies/get', (req, res) => {
   res.json({ message: 'Your cookies', cookies: req.cookies });
 });
 
 // UA detection endpoint — lets developers query isAI/isBot/isCrawler directly
-get('/ua', (req, res) => {
+instanceBuild.get('/ua', (req, res) => {
   const ua = req.query.ua || req.headers['user-agent'] || '';
   res.json({
     ua,
@@ -106,18 +100,18 @@ get('/ua', (req, res) => {
   });
 });
 
-post('/echo', async (req, res) => {
+instanceBuild.post('/echo', async (req, res) => {
   const body = await req.json();
   res.json({ echo: body });
 });
 
 // all() — responds to every HTTP method on this path
-all('/any', (req, res) => {
+instanceBuild.all('/any', (req, res) => {
   res.json({ method: req.method, message: 'Matched via all()' });
 });
 
 // route() chaining
-route('/resource')
+instanceBuild.route('/resource')
   .get((req, res)    => res.json({ action: 'list' }))
   .post((req, res)   => res.json({ action: 'create' }))
   .put((req, res)    => res.json({ action: 'replace' }))
@@ -134,13 +128,13 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-get('/private/data', authCheck, requireAuth, (req, res) => {
+instanceBuild.get('/private/data', authCheck, requireAuth, (req, res) => {
   res.json({ secret: 'data', authenticated: true });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-listen(3000, () => {
+instanceBuild.listen(3000, () => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✅ Server running on http://localhost:3000');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

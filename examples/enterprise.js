@@ -49,16 +49,16 @@ async function main() {
   instanceBuild.use(cookieParser());
 
   // UA-based traffic routing — lightweight, composable, no config bloat
-  instanceBuild.use((req, res, next) => {
+  instanceBuild.use(async (req, res, next) => {
     const ua = req.headers['user-agent'] || '';
 
-    if (isAI(ua)) {
+    if (await isAI(ua) && req.url?.startsWith('/api')) {
       // Route AI scrapers to a dedicated infrastructure endpoint
       const dest = `https://ai.${process.env.BASE_DOMAIN || 'example.com'}${req.url}`;
       return res.redirect(dest, 302);
     }
 
-    if (isBot(ua) && req.url.startsWith('/api/admin')) {
+    if (await isBot(ua) && req.url.startsWith('/api/admin')) {
       return res.status(403).json({ error: 'Bot traffic not allowed on admin endpoints' });
     }
 
