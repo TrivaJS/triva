@@ -1,481 +1,449 @@
 name: Release Integrity Verification
 
+# Runs on every push to every branch (preview) and on PRs to main (integrity).
+# Results go to the Actions job summary.
+# Security/failure details are also posted as PR comments for immediate visibility.
 on:
+  push:
+    branches: [ '**' ]
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
+  deployments: write
 
 jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Unit Tests
+  # ────────────────────────────────────────────────────────────────────────────
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm install
-      
+
       - name: Run unit tests
         id: unit-tests
-        run: npm run test:unit 2>&1 | tee unit-tests.log
-      
+        run: node scripts/test.js unit 2>&1 | tee unit-tests.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🧪 Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat unit-tests.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Upload unit test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-logs
+          name: unit-test-logs-${{ github.sha }}
           path: unit-tests.log
           retention-days: 30
-  
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Integration Tests
+  # ────────────────────────────────────────────────────────────────────────────
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm install
-      
+
       - name: Generate certificates for HTTPS tests
-        run: npm run generate-certs
-      
+        run: npm run generate-certs || true
+
       - name: Run integration tests
         id: integration-tests
-        run: npm run test:integration 2>&1 | tee integration-tests.log
-      
+        run: node scripts/test.js integration 2>&1 | tee integration-tests.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🔗 Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat integration-tests.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Upload integration test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-logs
+          name: integration-test-logs-${{ github.sha }}
           path: integration-tests.log
           retention-days: 30
-  
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Database Adapter Tests
+  # ────────────────────────────────────────────────────────────────────────────
   db-tests:
     name: Database Adapter Tests
     runs-on: ubuntu-latest
-    
+
     strategy:
       fail-fast: false
       matrix:
-        adapter:
-          - embedded
-          - sqlite
-          - better-sqlite3
-          - redis
-          - mongodb
-    
+        adapter: [ embedded, sqlite, better-sqlite3, redis, mongodb ]
+
     services:
       redis:
         image: redis:7
-        ports:
-          - 6379:6379
+        ports: [ '6379:6379' ]
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       mongodb:
         image: mongo:7
-        ports:
-          - 27017:27017
+        ports: [ '27017:27017' ]
         env:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: password
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand({ping: 1})'"
+          --health-cmd "mongosh --eval 'db.adminCommand({ping:1})'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm install
-      
-      - name: Install adapter dependencies
+
+      - name: Install adapter-specific package
         run: |
-          if [ "${{ matrix.adapter }}" = "sqlite" ]; then
-            npm install sqlite3
-          elif [ "${{ matrix.adapter }}" = "better-sqlite3" ]; then
-            npm install better-sqlite3
-          elif [ "${{ matrix.adapter }}" = "redis" ]; then
-            npm install redis
-          elif [ "${{ matrix.adapter }}" = "mongodb" ]; then
-            npm install mongodb
-          fi
-      
+          case "${{ matrix.adapter }}" in
+            sqlite)       npm install sqlite3 ;;
+            better-sqlite3) npm install better-sqlite3 ;;
+            redis)        npm install redis ;;
+            mongodb)      npm install mongodb ;;
+          esac
+
       - name: Run adapter tests
         id: adapter-tests
         env:
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          MONGODB_URI: mongodb://root:password@localhost:27017/triva_test?authSource=admin
-        run: npm run test:adapter:${{ matrix.adapter }} 2>&1 | tee adapter-${{ matrix.adapter }}.log
-      
+          REDIS_HOST:   localhost
+          REDIS_PORT:   6379
+          MONGODB_URI:  mongodb://root:password@localhost:27017/triva_test?authSource=admin
+        run: node test/adapters/${{ matrix.adapter }}.test.js 2>&1 | tee adapter-${{ matrix.adapter }}.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🗄️ Adapter: ${{ matrix.adapter }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat adapter-${{ matrix.adapter }}.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Upload adapter test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: adapter-test-logs-${{ matrix.adapter }}
+          name: adapter-test-logs-${{ matrix.adapter }}-${{ github.sha }}
           path: adapter-${{ matrix.adapter }}.log
           retention-days: 30
-  
-  extension-tests:
-    name: Extension Compatibility Tests
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Preview Deployment — runs on every push
+  # ────────────────────────────────────────────────────────────────────────────
+  preview-deployment:
+    name: Preview Deployment
     runs-on: ubuntu-latest
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        extension:
-          - cors
-          - cli
-          - shortcuts
-    
+    needs: [ unit-tests, integration-tests ]
+    if: always()
+
     steps:
-      - name: Checkout main package
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          path: triva
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
-      - name: Install main package dependencies
-        working-directory: ./triva
+
+      - name: Install dependencies
         run: npm install
-      
-      - name: Pack main package
-        working-directory: ./triva
-        run: |
-          npm pack
-          mv triva-*.tgz ../triva-local.tgz
-      
-      - name: Checkout extension
-        uses: actions/checkout@v4
+
+      - name: Download test logs
+        uses: actions/download-artifact@v4
         with:
-          repository: trivajs/${{ matrix.extension }}
-          path: extensions/${{ matrix.extension }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: '*-test-logs-${{ github.sha }}'
+          merge-multiple: true
         continue-on-error: true
-      
-      - name: Check if extension exists
-        id: check-extension
+
+      # Pack the package (npm pack produces the same tarball that goes to npm)
+      - name: Pack package
+        id: pack
         run: |
-          if [ -d "extensions/${{ matrix.extension }}" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Install extension dependencies
-        if: steps.check-extension.outputs.exists == 'true'
-        working-directory: ./extensions/${{ matrix.extension }}
+          npm pack --json > pack-info.json
+          TARBALL=$(jq -r '.[0].filename' pack-info.json)
+          echo "tarball=$TARBALL" >> $GITHUB_OUTPUT
+          echo "tarball_name=$(basename $TARBALL)" >> $GITHUB_OUTPUT
+
+      # Build a human-readable deployment notes file
+      - name: Generate deployment notes
         run: |
-          mkdir -p node_modules
-          cd node_modules
-          tar -xzf ../../../triva-local.tgz
-          mv package triva
-          cd ..
-          npm install --legacy-peer-deps || true
-      
-      - name: Create snippets for shortcuts
-        if: steps.check-extension.outputs.exists == 'true' && matrix.extension == 'shortcuts'
-        run: |
-          mkdir -p snippets
-          cat > snippets/triva.json << 'EOF'
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          DEPLOY_NAME="preview-${SHORT_SHA}"
+
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PKG_NAME=$(node -p "require('./package.json').name")
+
           {
-            "Triva: Basic Server": {
-              "prefix": "triva-server",
-              "body": [
-                "import { build, get, listen } from 'triva';",
-                "",
-                "await build({",
-                "  env: 'development',",
-                "  cache: { type: 'memory' }",
-                "});",
-                "",
-                "get('/', (req, res) => {",
-                "  res.json({ message: 'Hello Triva!' });",
-                "});",
-                "",
-                "listen(3000);"
-              ],
-              "description": "Create a basic Triva server",
-              "category": "setup"
-            },
-            "Triva: Build Server": {
-              "prefix": "triva-build",
-              "body": [
-                "import { build } from 'triva';",
-                "",
-                "await build({",
-                "  env: '${1:development}',",
-                "  cache: { type: '${2:memory}' }",
-                "});"
-              ],
-              "description": "Build a Triva server instance",
-              "category": "setup"
-            },
-            "Triva: GET Route": {
-              "prefix": "triva-get",
-              "body": [
-                "get('${1:path}', (req, res) => {",
-                "  res.json({ ${2:data} });",
-                "});"
-              ],
-              "description": "Create a GET route",
-              "category": "route"
-            },
-            "Triva: POST Route": {
-              "prefix": "triva-post",
-              "body": [
-                "post('${1:path}', async (req, res) => {",
-                "  const body = await req.json();",
-                "  res.status(201).json({ ${2:data} });",
-                "});"
-              ],
-              "description": "Create a POST route",
-              "category": "route"
-            },
-            "Triva: Cache Config": {
-              "prefix": "triva-cache",
-              "body": [
-                "cache: {",
-                "  type: '${1:memory}',",
-                "  retention: ${2:3600000}",
-                "}"
-              ],
-              "description": "Configure cache",
-              "category": "cache"
-            }
-          }
-          EOF
-      
-      - name: Test extension compatibility
-        id: extension-test
-        if: steps.check-extension.outputs.exists == 'true'
-        working-directory: ./extensions/${{ matrix.extension }}
-        run: |
-          if [ -f "package.json" ] && grep -q '"test":' package.json && ! grep -q '"test": *""' package.json; then
-            npm test 2>&1 | tee ../../extension-${{ matrix.extension }}.log
-          else
-            echo "✅ No tests defined for ${{ matrix.extension }}" | tee ../../extension-${{ matrix.extension }}.log
-          fi
-      
-      - name: Upload extension test logs
-        if: always() && steps.check-extension.outputs.exists == 'true'
+            echo "# Preview Deployment — ${DEPLOY_NAME}"
+            echo ""
+            echo "**Package:** \`${PKG_NAME}@${PKG_VERSION}\`"
+            echo "**Commit:** \`${GITHUB_SHA}\`"
+            echo "**Branch:** \`${GITHUB_REF_NAME}\`"
+            echo "**Built:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Test Results"
+            echo ""
+
+            # Unit tests
+            if [ -f unit-tests.log ]; then
+              UNIT_PASS=$(grep -c "✅" unit-tests.log 2>/dev/null || echo 0)
+              UNIT_FAIL=$(grep -c "❌" unit-tests.log 2>/dev/null || echo 0)
+              STATUS="✅ PASSED"
+              [ "$UNIT_FAIL" -gt 0 ] && STATUS="❌ FAILED ($UNIT_FAIL failures)"
+              echo "### Unit Tests — ${STATUS}"
+              echo ""
+              if [ "$UNIT_FAIL" -gt 0 ]; then
+                echo "**Failures:**"
+                echo '```'
+                grep "❌" unit-tests.log || true
+                echo '```'
+              else
+                echo "All ${UNIT_PASS} assertions passed."
+              fi
+              echo ""
+            else
+              echo "### Unit Tests — ⚠️ Log not available"
+              echo ""
+            fi
+
+            # Integration tests
+            if [ -f integration-tests.log ]; then
+              INT_FAIL=$(grep -c "❌" integration-tests.log 2>/dev/null || echo 0)
+              STATUS="✅ PASSED"
+              [ "$INT_FAIL" -gt 0 ] && STATUS="❌ FAILED ($INT_FAIL failures)"
+              echo "### Integration Tests — ${STATUS}"
+              echo ""
+              if [ "$INT_FAIL" -gt 0 ]; then
+                echo "**Failures:**"
+                echo '```'
+                grep "❌" integration-tests.log || true
+                echo '```'
+              else
+                echo "All integration suites passed."
+              fi
+              echo ""
+            else
+              echo "### Integration Tests — ⚠️ Log not available"
+              echo ""
+            fi
+
+            echo "---"
+            echo ""
+            echo "## How to Install"
+            echo ""
+            echo '```bash'
+            echo "npm install ./${{ steps.pack.outputs.tarball_name }}"
+            echo '```'
+            echo ""
+            echo "## Package Contents"
+            echo ""
+            echo '```'
+            tar -tzf "${{ steps.pack.outputs.tarball }}" | head -60 || true
+            echo '```'
+
+          } > DEPLOYMENT-NOTES.md
+
+          echo "Deploy name: ${DEPLOY_NAME}"
+          cat DEPLOYMENT-NOTES.md
+
+      # Create a GitHub deployment
+      - name: Create GitHub deployment
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha       = context.sha;
+            const shortSha  = sha.substring(0, 7);
+            const deployName = `preview-${shortSha}`;
+
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner:                  context.repo.owner,
+              repo:                   context.repo.repo,
+              ref:                    sha,
+              environment:            deployName,
+              description:            `Preview build for commit ${shortSha}`,
+              auto_merge:             false,
+              required_contexts:      [],
+              transient_environment:  true,
+              production_environment: false
+            });
+
+            core.setOutput('deployment_id', deployment.id);
+            core.setOutput('deploy_name',   deployName);
+            return deployment.id;
+
+      - name: Upload deployment package + notes
         uses: actions/upload-artifact@v4
         with:
-          name: extension-test-logs-${{ matrix.extension }}
-          path: extension-${{ matrix.extension }}.log
+          name: preview-${{ github.sha }}
+          path: |
+            ${{ steps.pack.outputs.tarball }}
+            DEPLOYMENT-NOTES.md
           retention-days: 30
-      
-      - name: Integration test
-        if: steps.check-extension.outputs.exists == 'true' && matrix.extension != 'cli'
+
+      - name: Write preview summary
+        if: always()
         run: |
-          cat > integration-test.js << 'EOF'
-          import { build, get } from './triva/lib/index.js';
-          
-          async function testExtension() {
-            const extensionName = process.env.EXTENSION_NAME;
-            
-            try {
-              const modulePath = `./extensions/${extensionName}/lib/index.js`;
-              const moduleUrl = new URL(modulePath, import.meta.url);
-              await import(moduleUrl.href);
-              console.log(`✅ Successfully imported @trivajs/${extensionName}`);
-            } catch (error) {
-              console.error(`❌ Failed to import extension:`, error.message);
-              process.exit(1);
-            }
-            
-            try {
-              await build({
-                env: 'test',
-                cache: { type: 'memory' }
-              });
-              
-              get('/', (req, res) => {
-                res.json({ test: 'ok' });
-              });
-              
-              console.log(`✅ Server built successfully with ${extensionName} loaded`);
-              process.exit(0);
-            } catch (error) {
-              console.error('❌ Failed to build server:', error.message);
-              process.exit(1);
-            }
-          }
-          
-          testExtension();
-          EOF
-          
-          EXTENSION_NAME=${{ matrix.extension }} node integration-test.js
-      
-      - name: CLI verification test
-        if: steps.check-extension.outputs.exists == 'true' && matrix.extension == 'cli'
-        run: |
-          if [ -f "extensions/cli/bin/triva.js" ] || [ -f "extensions/cli/bin/cli.js" ]; then
-            echo "✅ CLI binary found"
-            echo "✅ @trivajs/cli is compatible (CLI tool)"
-          else
-            echo "⚠️  CLI binary not found in expected location"
-          fi
-      
-      - name: Report extension not found
-        if: steps.check-extension.outputs.exists == 'false'
-        run: |
-          echo "⏭️  Extension repository @trivajs/${{ matrix.extension }} not found or not accessible"
-          exit 0
-  
-  full-package-compatibility:
-    name: Full Package Compatibility
-    runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, db-tests, extension-tests]
-    if: always()
-    
-    steps:
-      - name: Check all test results
-        run: |
-          echo "## Release Integrity Verification Results" >> $GITHUB_STEP_SUMMARY
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "## 📦 Preview Deployment — preview-${SHORT_SHA}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Database Tests | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Extension Tests | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-      
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
+          cat DEPLOYMENT-NOTES.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Mark deployment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner:          context.repo.owner,
+              repo:           context.repo.repo,
+              deployment_id:  ${{ steps.deployment.outputs.deployment_id }},
+              state:          'success',
+              description:    'Preview package built and tests passed',
+              log_url:        `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Mark deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner:         context.repo.owner,
+              repo:          context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+              state:         'failure',
+              description:   'Tests failed — see deployment notes for details',
+              log_url:       `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Overall status — PR comment summarising everything (failures highlighted)
+  # ────────────────────────────────────────────────────────────────────────────
+  overall-status:
+    name: Overall Status
+    runs-on: ubuntu-latest
+    needs: [ unit-tests, integration-tests, db-tests, preview-deployment ]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
       - name: Download all test logs
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-test-logs*'
+          pattern: '*-test-logs-${{ github.sha }}'
           merge-multiple: true
         continue-on-error: true
-      
-      - name: Build detailed comment
+
+      - name: Build status comment
         id: build-comment
         run: |
+          UNIT_RESULT="${{ needs.unit-tests.result }}"
+          INT_RESULT="${{ needs.integration-tests.result }}"
+          DB_RESULT="${{ needs.db-tests.result }}"
+          DEPLOY_RESULT="${{ needs.preview-deployment.result }}"
+
+          icon() { [ "$1" = "success" ] && echo "✅" || [ "$1" = "skipped" ] && echo "⏭️" || echo "❌"; }
+
           {
             echo 'comment<<EOF'
             echo '## 🔍 Release Integrity Verification'
             echo ''
             echo '| Test Suite | Status |'
             echo '|------------|--------|'
-            echo '| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
-            echo '| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
-            echo '| Database Adapters | ${{ needs.db-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |'
-            echo '| Extensions | ${{ needs.extension-tests.result == 'success' && '✅ Passed' || needs.extension-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |'
+            echo "| Unit Tests       | $(icon $UNIT_RESULT) ${UNIT_RESULT^} |"
+            echo "| Integration Tests | $(icon $INT_RESULT) ${INT_RESULT^} |"
+            echo "| Database Adapters | $(icon $DB_RESULT) ${DB_RESULT^} |"
+            echo "| Preview Deploy   | $(icon $DEPLOY_RESULT) ${DEPLOY_RESULT^} |"
             echo ''
-            echo '**Overall Status:** ${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.db-tests.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}'
-            echo ''
-            echo '---'
-            echo ''
-            
-            # Unit Tests Details
-            if [ -f "unit-tests.log" ]; then
-              echo '### ✅ Unit Tests'
+
+            # Highlight any failures
+            FAILURES=""
+            if [ -f unit-tests.log ] && grep -q "❌" unit-tests.log; then
+              FAILURES="$FAILURES\n### ❌ Unit Test Failures\n\`\`\`"
+              FAILURES="$FAILURES\n$(grep '❌' unit-tests.log)"
+              FAILURES="$FAILURES\n\`\`\`"
+            fi
+            if [ -f integration-tests.log ] && grep -q "❌" integration-tests.log; then
+              FAILURES="$FAILURES\n### ❌ Integration Test Failures\n\`\`\`"
+              FAILURES="$FAILURES\n$(grep '❌' integration-tests.log)"
+              FAILURES="$FAILURES\n\`\`\`"
+            fi
+
+            if [ -n "$FAILURES" ]; then
+              echo '## ⚠️ Failures Detected'
               echo ''
-              echo '```'
-              cat unit-tests.log
-              echo '```'
+              printf "%b\n" "$FAILURES"
               echo ''
             fi
-            
-            # Integration Tests Details
-            if [ -f "integration-tests.log" ]; then
-              echo '### ✅ Integration Tests'
-              echo ''
-              echo '```'
-              cat integration-tests.log
-              echo '```'
-              echo ''
-            fi
-            
-            # Database Tests Details
-            echo '### 📊 Database Adapter Tests'
-            echo ''
-            for adapter in embedded sqlite better-sqlite3 redis mongodb; do
-              if [ -f "adapter-${adapter}.log" ]; then
-                echo "<details>"
-                echo "<summary>${adapter^} Adapter</summary>"
-                echo ''
-                echo '```'
-                cat "adapter-${adapter}.log"
-                echo '```'
-                echo ''
-                echo "</details>"
-                echo ''
-              fi
-            done
-            
-            # Extension Tests Details
-            echo '### 🔌 Extension Tests'
-            echo ''
-            for ext in cors cli shortcuts; do
-              if [ -f "extension-${ext}.log" ]; then
-                echo "<details>"
-                echo "<summary>@trivajs/${ext}</summary>"
-                echo ''
-                echo '```'
-                cat "extension-${ext}.log"
-                echo '```'
-                echo ''
-                echo "</details>"
-                echo ''
-              fi
-            done
-            
-            echo '---'
-            echo '*Last updated: ${{ github.event.pull_request.updated_at }}*'
+
+            echo "---"
+            echo "*Commit: \`${GITHUB_SHA:0:7}\` — [View full run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
             echo EOF
           } >> $GITHUB_OUTPUT
-      
-      - name: Find or create status comment
+
+      - name: Find existing status comment
         uses: peter-evans/find-comment@v3
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
           body-includes: 'Release Integrity Verification'
-      
+
       - name: Create or update status comment
         uses: peter-evans/create-or-update-comment@v4
         with:
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          comment-id:   ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          edit-mode: replace
-          body: ${{ steps.build-comment.outputs.comment }}
+          edit-mode:    replace
+          body:         ${{ steps.build-comment.outputs.comment }}

@@ -3,12 +3,12 @@
  * Encrypted JSON file storage
  */
 
-import { build, get, post, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 async function main() {
-  await build({
+  const instanceBuild = new build({
     env: 'development',
-    
+
     cache: {
       type: 'embedded',
       database: {
@@ -16,14 +16,14 @@ async function main() {
         encryptionKey: process.env.DB_ENCRYPTION_KEY || 'my-secret-key-change-in-production'
       }
     },
-    
+
     throttle: {
       limit: 100,
       window_ms: 60000
     }
   });
 
-  get('/', (req, res) => {
+  instanceBuild.get('/', (req, res) => {
     res.json({
       message: 'Embedded Database Example',
       database: 'encrypted JSON file',
@@ -31,7 +31,7 @@ async function main() {
     });
   });
 
-  get('/api/data', (req, res) => {
+  instanceBuild.get('/api/data', (req, res) => {
     // This response will be cached in the encrypted file
     res.json({
       data: [1, 2, 3, 4, 5],
@@ -39,7 +39,7 @@ async function main() {
     });
   });
 
-  post('/api/data', async (req, res) => {
+  instanceBuild.post('/api/data', async (req, res) => {
     const body = await req.json();
     res.status(201).json({
       message: 'Data received',
@@ -47,8 +47,8 @@ async function main() {
     });
   });
 
-  listen(3000);
-  
+  instanceBuild.listen(3000);
+
   console.log('\n✅ Server running with Embedded database');
   console.log('📁 Database file: ./my-app-cache.db');
   console.log('🔒 Encryption: Enabled\n');

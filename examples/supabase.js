@@ -1,6 +1,6 @@
 /**
  * Supabase Database Example
- * 
+ *
  * Prerequisites:
  * 1. Install Supabase client: npm install @supabase/supabase-js
  * 2. Create a Supabase project at https://supabase.com
@@ -8,7 +8,7 @@
  * 4. Get your URL and anon key from project settings
  */
 
-import { build, get, post, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 // SQL to run in Supabase SQL Editor (Dashboard > SQL Editor):
 /*
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS triva_cache (
   expires_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_triva_cache_expires_at 
+CREATE INDEX IF NOT EXISTS idx_triva_cache_expires_at
 ON triva_cache (expires_at);
 
 -- Enable Row Level Security (optional but recommended)
@@ -30,21 +30,21 @@ FOR ALL USING (true);
 */
 
 async function startSupabaseServer() {
-  await build({
+  const instanceBuild = new build({
     env: 'production',
-    
+
     // Supabase database configuration
     cache: {
       type: 'supabase',
       retention: 3600000, // 1 hour default TTL
-      
+
       database: {
         url: process.env.SUPABASE_URL || 'https://xxxxxxxxxxxxx.supabase.co',
         key: process.env.SUPABASE_KEY || 'your-anon-key-here',
-        
+
         // Optional: Custom table name (default: 'triva_cache')
         tableName: 'triva_cache',
-        
+
         // Optional: Supabase client options
         options: {
           auth: {
@@ -56,7 +56,7 @@ async function startSupabaseServer() {
         }
       }
     },
-    
+
     // Optional: Throttling
     throttle: {
       limit: 100,
@@ -65,7 +65,7 @@ async function startSupabaseServer() {
   });
 
   // Example routes
-  get('/', (req, res) => {
+  instanceBuild.get('/', (req, res) => {
     res.json({
       message: 'Triva with Supabase',
       database: 'supabase',
@@ -74,23 +74,23 @@ async function startSupabaseServer() {
   });
 
   // Cached endpoint
-  get('/api/users', async (req, res) => {
+  instanceBuild.get('/api/users', async (req, res) => {
     // This will be cached in Supabase
     const users = [
       { id: 1, name: 'Alice' },
       { id: 2, name: 'Bob' },
       { id: 3, name: 'Charlie' }
     ];
-    
+
     res.json({ users, cached: true });
   });
 
   // Create user (bypasses cache)
-  post('/api/users', async (req, res) => {
+  instanceBuild.post('/api/users', async (req, res) => {
     const user = await req.json();
-    
+
     // In real app, save to database here
-    
+
     res.status(201).json({
       message: 'User created',
       user
@@ -98,7 +98,7 @@ async function startSupabaseServer() {
   });
 
   // Health check
-  get('/health', (req, res) => {
+  instanceBuild.get('/health', (req, res) => {
     res.json({
       status: 'healthy',
       database: 'supabase',
@@ -106,7 +106,7 @@ async function startSupabaseServer() {
     });
   });
 
-  listen(3000);
+  instanceBuild.listen(3000);
 }
 
 // Environment variables check

@@ -1,6 +1,6 @@
 
 import { performance } from 'perf_hooks';
-import { build, get, post } from '../lib/index.js';
+import { build, cache } from '../lib/index.js';
 
 class BenchmarkRunner {
   constructor() {
@@ -71,14 +71,15 @@ async function benchmarkRouting() {
 
   const runner = new BenchmarkRunner();
 
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory' }
   });
+  instanceBuild.listen(3000);
 
   // Benchmark: Route matching (simple)
   const simpleRoutes = [];
   for (let i = 0; i < 10; i++) {
-    get(`/route${i}`, (req, res) => res.json({ id: i }));
+    instanceBuild.get(`/route${i}`, (req, res) => res.json({ id: i }));
     simpleRoutes.push(`/route${i}`);
   }
 
@@ -94,7 +95,7 @@ async function benchmarkRouting() {
   runner.printResult(routeMatchResult);
 
   // Benchmark: Route with parameters
-  get('/users/:id', (req, res) => res.json({ userId: req.params.id }));
+  instanceBuild.get('/users/:id', (req, res) => res.json({ userId: req.params.id }));
 
   const paramRouteResult = await runner.run(
     'Route Parameter Extraction',
@@ -152,7 +153,7 @@ async function benchmarkRouting() {
 
   // Benchmark: Multiple route matching
   for (let i = 10; i < 100; i++) {
-    get(`/api/v1/resources/${i}`, (req, res) => res.json({ id: i }));
+    instanceBuild.get(`/api/v1/resources/${i}`, (req, res) => res.json({ id: i }));
   }
 
   const multiRouteResult = await runner.run(
@@ -167,6 +168,8 @@ async function benchmarkRouting() {
   runner.printResult(multiRouteResult);
 
   runner.printSummary();
+  instanceBuild.close();
+  process.exit(1);
 }
 
 // Helper functions
@@ -203,6 +206,7 @@ function createMockResponse() {
 }
 
 benchmarkRouting().catch(err => {
+  instanceBuild.close();
   console.error('Benchmark error:', err);
   process.exit(1);
 });

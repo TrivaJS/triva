@@ -71,13 +71,15 @@ async function benchmarkThrottle() {
 
   const runner = new BenchmarkRunner();
 
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory' },
     throttle: {
       limit: 1000,
       window_ms: 60000
     }
   });
+
+  instanceBuild.listen(3001);
 
   // Benchmark: Rate limit check (under limit)
   const checkResult = await runner.run(
@@ -228,6 +230,8 @@ async function benchmarkThrottle() {
   runner.printResult(fingerprintResult);
 
   runner.printSummary();
+  instanceBuild.close();
+  process.exit(1);
 }
 
 benchmarkThrottle().catch(err => {

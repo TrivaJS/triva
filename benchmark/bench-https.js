@@ -6,7 +6,7 @@
 
 'use strict';
 
-import { build, get, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 import https from 'https';
 import fs from 'fs';
 import { execSync } from 'child_process';
@@ -36,7 +36,7 @@ async function runBenchmark() {
   ensureCertificates();
 
   // Build HTTPS server
-  await build({
+  const instanceBuild = new build({
     protocol: 'https',
     ssl: {
       key: fs.readFileSync('./key.pem'),
@@ -49,15 +49,15 @@ async function runBenchmark() {
   });
 
   // Define routes
-  get('/', (req, res) => {
+  instanceBuild.get('/', (req, res) => {
     res.json({ message: 'Hello HTTPS' });
   });
 
-  get('/text', (req, res) => {
+  instanceBuild.get('/text', (req, res) => {
     res.send('Plain text response');
   });
 
-  get('/large', (req, res) => {
+  instanceBuild.get('/large', (req, res) => {
     res.json({
       data: new Array(1000).fill({ id: 1, name: 'test', value: 42 })
     });
@@ -65,7 +65,7 @@ async function runBenchmark() {
 
   // Start server
   const server = await new Promise((resolve) => {
-    const srv = listen(PORT, () => {
+    const srv = instanceBuild.listen(PORT, () => {
       console.log(`✅ HTTPS server started on port ${PORT}\n`);
       resolve(srv);
     });
@@ -102,7 +102,7 @@ async function runBenchmark() {
 
     // Maintain concurrency
     if (jsonRequests.length >= CONCURRENCY) {
-      await Promise.race(jsonRequests.map((p, idx) => 
+      await Promise.race(jsonRequests.map((p, idx) =>
         p.then(() => idx).catch(() => idx)
       )).then(idx => jsonRequests.splice(idx, 1));
     }
@@ -148,7 +148,7 @@ async function runBenchmark() {
     textRequests.push(promise);
 
     if (textRequests.length >= CONCURRENCY) {
-      await Promise.race(textRequests.map((p, idx) => 
+      await Promise.race(textRequests.map((p, idx) =>
         p.then(() => idx).catch(() => idx)
       )).then(idx => textRequests.splice(idx, 1));
     }
@@ -195,7 +195,7 @@ async function runBenchmark() {
     largeReqs.push(promise);
 
     if (largeReqs.length >= CONCURRENCY) {
-      await Promise.race(largeReqs.map((p, idx) => 
+      await Promise.race(largeReqs.map((p, idx) =>
         p.then(() => idx).catch(() => idx)
       )).then(idx => largeReqs.splice(idx, 1));
     }

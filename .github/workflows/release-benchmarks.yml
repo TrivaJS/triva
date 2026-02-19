@@ -1,0 +1,121 @@
+name: Release Benchmarks
+
+# Runs all benchmark suites on every PR and posts results to the
+# GitHub Actions job summary. Does NOT post PR comments — keep
+# changelogs and benchmarks separate for clarity.
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-benchmarks:
+    name: Run Benchmark Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate certificates (HTTPS benchmark)
+        run: npm run generate-certs || true
+
+      - name: Run Cache benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-cache.js 2>&1 | tee cache.log
+
+      - name: Run Routing benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-routing.js 2>&1 | tee routing.log
+
+      - name: Run Middleware benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-middleware.js 2>&1 | tee middleware.log
+
+      - name: Run Throttle benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-throttle.js 2>&1 | tee throttle.log
+
+      - name: Run Logging benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-logging.js 2>&1 | tee logging.log
+
+      - name: Run HTTP benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-http.js 2>&1 | tee http.log
+
+      - name: Run HTTPS benchmarks
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node benchmark/bench-https.js 2>&1 | tee https.log
+
+      - name: Run RPS benchmark
+        continue-on-error: true
+        timeout-minutes: 15
+        run: node benchmark/bench-rps.js 2>&1 | tee rps.log
+
+      - name: Write results to Actions summary
+        if: always()
+        run: |
+          echo "## ⚡ Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Node:** $(node --version)  |  **Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for bench_file in cache.log routing.log middleware.log throttle.log logging.log http.log https.log rps.log; do
+            bench_name="${bench_file%.log}"
+            bench_name="${bench_name^}"
+
+            echo "### ${bench_name}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ -f "$bench_file" ]; then
+              if grep -q "📈 Benchmark Summary\|Results Summary" "$bench_file"; then
+                echo '```' >> $GITHUB_STEP_SUMMARY
+                sed -n '/📈 Benchmark Summary\|Results Summary/,/^━\+$/p' "$bench_file" | head -40 \
+                  >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+              else
+                echo '*No summary section found — see artifacts for full output.*' >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo '*Benchmark did not run.*' >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Upload benchmark logs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: |
+            cache.log
+            routing.log
+            middleware.log
+            throttle.log
+            logging.log
+            http.log
+            https.log
+            rps.log
+          retention-days: 90

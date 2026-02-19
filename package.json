@@ -29,6 +29,7 @@
     "benchmark:logging": "node benchmark/bench-logging.js",
     "benchmark:http": "node benchmark/bench-http.js",
     "benchmark:https": "node benchmark/bench-https.js",
+    "benchmark:rps": "node benchmark/bench-rps.js",
     "docs": "node scripts/generate-docs.js",
     "release": "node scripts/release.js",
     "migrate": "node scripts/migrate.js",

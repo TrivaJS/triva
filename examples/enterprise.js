@@ -1,221 +1,130 @@
 /**
  * Enterprise Full-Featured Example
- * Demonstrates all Triva features in production configuration
+ * Production configuration: tiered throttle policies, isAI/isBot/isCrawler
+ * middleware pattern replacing the old redirects config.
  */
 
 import {
-  build,
-  get,
-  post,
-  use,
-  listen,
-  cache,
-  log,
-  errorTracker,
-  cookieParser
+  build, cache, log, errorTracker, cookieParser,
+  isAI, isBot, isCrawler
 } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting Enterprise Example...\n');
 
-  // Full enterprise configuration
-  await build({
+  const instanceBuild = new build({
     env: 'production',
 
-    // Redis for high-performance caching
     cache: {
-      type: 'redis',
+      type:      'redis',
       retention: 7200000,
       database: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: 6379,
+        host:     process.env.REDIS_HOST || 'localhost',
+        port:     6379,
         password: process.env.REDIS_PASSWORD
       }
     },
 
-    // Advanced throttling with policies
+    // Throttle policies now receive the full req object as context
     throttle: {
-      limit: 1000,
-      window_ms: 60000,
-      burst_limit: 100,
-      ban_threshold: 10,
-      ban_duration_ms: 3600000,
-      policies: ({ context }) => {
-        // Different limits for different endpoints
-        if (context.pathname?.startsWith('/api/admin')) {
-          return { limit: 50, window_ms: 60000 };
-        }
-        if (context.pathname?.startsWith('/api/public')) {
-          return { limit: 2000, window_ms: 60000 };
-        }
-        if (context.pathname?.startsWith('/api/webhook')) {
-          return { limit: 10, window_ms: 1000 };
-        }
+      limit:          1000,
+      window_ms:      60000,
+      burst_limit:    100,
+      ban_threshold:  10,
+      ban_ms:         3600000,
+      policies: (req) => {
+        if (req.url?.startsWith('/api/admin'))   return { limit: 50,   window_ms: 60000 };
+        if (req.url?.startsWith('/api/public'))  return { limit: 2000, window_ms: 60000 };
+        if (req.url?.startsWith('/api/webhook')) return { limit: 10,   window_ms: 1000  };
+        return null;
       }
     },
 
-    // Request logging
-    retention: {
-      enabled: true,
-      maxEntries: 500000
-    },
-
-    // Error tracking
-    errorTracking: {
-      enabled: true,
-      maxEntries: 100000
-    }
+    retention:     { enabled: true, maxEntries: 500000 },
+    errorTracking: { enabled: true, maxEntries: 100000 }
   });
 
   console.log('✅ Enterprise Triva built!\n');
 
-  // Use cookie parser
-  use(cookieParser());
+  instanceBuild.use(cookieParser());
 
-  // Health check
-  get('/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
+  // UA-based traffic routing — lightweight, composable, no config bloat
+  instanceBuild.use((req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
+
+    if (isAI(ua)) {
+      // Route AI scrapers to a dedicated infrastructure endpoint
+      const dest = `https://ai.${process.env.BASE_DOMAIN || 'example.com'}${req.url}`;
+      return res.redirect(dest, 302);
+    }
+
+    if (isBot(ua) && req.url.startsWith('/api/admin')) {
+      return res.status(403).json({ error: 'Bot traffic not allowed on admin endpoints' });
+    }
+
+    next();
   });
 
-  // Public API with high rate limit
-  get('/api/public/data', async (req, res) => {
+  instanceBuild.get('/health', (req, res) => {
+    res.json({ status: 'healthy', uptime: process.uptime(), timestamp: new Date().toISOString() });
+  });
+
+  instanceBuild.get('/api/public/data', async (req, res) => {
     const cached = await cache.get('public:data');
-    if (cached) {
-      return res.json({ source: 'cache', data: cached });
-    }
+    if (cached) return res.json({ source: 'cache', data: cached });
 
     const data = { message: 'Public data', items: [1, 2, 3] };
     await cache.set('public:data', data, 300000);
-
     res.json({ source: 'database', data });
   });
 
-  // Admin API with strict rate limiting
-  get('/api/admin/users', async (req, res) => {
-    // Check admin cookie
-    if (!req.cookies.admin_token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    res.json({
-      users: [
-        { id: 1, name: 'Admin User', role: 'admin' },
-        { id: 2, name: 'Regular User', role: 'user' }
-      ]
-    });
+  instanceBuild.get('/api/admin/users', async (req, res) => {
+    if (!req.cookies.admin_token) return res.status(401).json({ error: 'Unauthorized' });
+    res.json({ users: [{ id: 1, name: 'Admin', role: 'admin' }] });
   });
 
-  // Admin login
-  post('/api/admin/login', async (req, res) => {
+  instanceBuild.post('/api/admin/login', async (req, res) => {
     const { username, password } = await req.json();
-
-    // Simulate authentication
     if (username === 'admin' && password === 'admin') {
-      res.cookie('admin_token', 'secure_token_here', {
-        httpOnly: true,
-        secure: true,
-        maxAge: 86400000 // 24 hours
-      });
-
+      res.cookie('admin_token', 'secure_token', { httpOnly: true, secure: true, maxAge: 86400000 });
       return res.json({ message: 'Login successful' });
     }
-
     res.status(401).json({ error: 'Invalid credentials' });
   });
 
-  // Webhook endpoint (very strict rate limit)
-  post('/api/webhook/payment', async (req, res) => {
+  instanceBuild.post('/api/webhook/payment', async (req, res) => {
     const data = await req.json();
-
-    console.log('💰 Payment webhook received:', data);
-
-    // Process webhook
+    console.log('💰 Payment webhook:', data);
     res.status(200).json({ received: true });
   });
 
-  // Export logs endpoint
-  get('/api/admin/logs/export', async (req, res) => {
-    if (!req.cookies.admin_token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const { limit = 1000, severity } = req.query;
-
-    const result = await log.export({
-      limit: parseInt(limit),
-      severity
-    });
-
-    res.json({
-      exported: result.count,
-      timestamp: new Date().toISOString()
-    });
+  instanceBuild.get('/api/admin/logs/export', async (req, res) => {
+    if (!req.cookies.admin_token) return res.status(401).json({ error: 'Unauthorized' });
+    const result = await log.export({ limit: parseInt(req.query.limit || '1000') });
+    res.json({ exported: result.count, timestamp: new Date().toISOString() });
   });
 
-  // Error tracking endpoint
-  get('/api/admin/errors', async (req, res) => {
-    if (!req.cookies.admin_token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const errors = await errorTracker.get({
-      limit: 100,
-      severity: req.query.severity,
-      resolved: req.query.resolved === 'true'
-    });
-
+  instanceBuild.get('/api/admin/errors', async (req, res) => {
+    if (!req.cookies.admin_token) return res.status(401).json({ error: 'Unauthorized' });
+    const errors = await errorTracker.get({ limit: 100 });
     res.json({ errors });
   });
 
-  // Resolve error
-  post('/api/admin/errors/:id/resolve', async (req, res) => {
-    if (!req.cookies.admin_token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    await errorTracker.resolve(req.params.id);
-
-    res.json({ message: 'Error resolved' });
+  instanceBuild.get('/api/test/error', (req, res) => {
+    throw new Error('Test error for error tracking');
   });
 
-  // Intentional error for testing
-  get('/api/test/error', (req, res) => {
-    throw new Error('This is a test error for error tracking');
-  });
-
-  // Cache stats
-  get('/api/admin/cache/stats', async (req, res) => {
-    if (!req.cookies.admin_token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // This would require cache stats implementation
-    res.json({
-      message: 'Cache stats endpoint',
-      note: 'Implement based on your cache adapter'
-    });
+  // UA detection utility endpoint
+  instanceBuild.get('/api/ua', (req, res) => {
+    const ua = req.query.ua || req.headers['user-agent'] || '';
+    res.json({ ua, isAI: isAI(ua), isBot: isBot(ua), isCrawler: isCrawler(ua) });
   });
 
   const port = process.env.PORT || 3004;
-  listen(port);
+  instanceBuild.listen(port);
 
   console.log(`\n📡 Enterprise Server running on http://localhost:${port}`);
-  console.log(`\n📝 Public Endpoints:`);
-  console.log(`   GET  http://localhost:${port}/health`);
-  console.log(`   GET  http://localhost:${port}/api/public/data`);
-  console.log(`\n🔐 Admin Endpoints (require authentication):`);
-  console.log(`   POST http://localhost:${port}/api/admin/login`);
-  console.log(`   GET  http://localhost:${port}/api/admin/users`);
-  console.log(`   GET  http://localhost:${port}/api/admin/logs/export`);
-  console.log(`   GET  http://localhost:${port}/api/admin/errors`);
-  console.log(`   POST http://localhost:${port}/api/admin/errors/:id/resolve`);
-  console.log(`\n🎯 Testing:`);
-  console.log(`   GET  http://localhost:${port}/api/test/error`);
-  console.log(`\n💡 Login with: { "username": "admin", "password": "admin" }`);
+  console.log('\n💡 Login: POST /api/admin/login  { "username":"admin","password":"admin" }');
 }
 
 main().catch(console.error);

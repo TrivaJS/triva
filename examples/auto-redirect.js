@@ -1,37 +1,36 @@
 /**
  * Auto-Redirect Example
- * Demonstrates intelligent traffic routing for AI, bots, and crawlers
+ * Demonstrates how to build traffic routing with isAI / isBot / isCrawler
+ * instead of the old redirects:{} config block.
+ *
+ * These three helpers accept a UA string and return a boolean — making
+ * middleware composition trivial.
  */
 
-import { build, get, listen } from '../lib/index.js';
+import { build, get, use, listen, isAI, isBot, isCrawler } from '../lib/index.js';
+
+// ─── Example 1: Redirect all AI scrapers ─────────────────────────────────────
 
 async function main() {
-  // Example 1: Simple redirect for AI traffic
   await build({
-    env: 'production',
+    env:      'production',
+    throttle: { limit: 100, window_ms: 60000 }
+  });
 
-    // Redirect AI/LLM traffic to specialized endpoint
-    redirects: {
-      enabled: true,
-      redirectAI: true,              // Redirect GPTBot, Claude, etc.
-      redirectBots: false,           // Allow search bots
-      redirectCrawlers: false,       // Allow crawlers
-      destination: 'https://ai.example.com',
-      statusCode: 302,
-      whitelist: ['Googlebot', 'Bingbot'],  // Never redirect these
-      bypassThrottle: true,          // Skip throttling for redirected traffic
-      logRedirects: true             // Log for debugging
-    },
+  // Build your own redirect middleware in a few lines
+  use((req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
 
-    // Throttling still applies to non-redirected traffic
-    throttle: {
-      limit: 100,
-      window_ms: 60000
+    if (isAI(ua)) {
+      // Permanent redirect to AI-dedicated infrastructure
+      return res.redirect('https://ai.example.com' + req.url, 302);
     }
+
+    next();
   });
 
   get('/', (req, res) => {
-    res.json({ message: 'Main site - no AI traffic here!' });
+    res.json({ message: 'Main site — no AI traffic here!' });
   });
 
   get('/api/data', (req, res) => {
@@ -42,158 +41,82 @@ async function main() {
   console.log('✅ Server running with AI redirect on port 3000');
 }
 
-// Example 2: Dynamic redirects based on request
-async function dynamicExample() {
-  await build({
-    redirects: {
-      enabled: true,
-      redirectAI: true,
-      destination: (req) => {
-        // Route AI traffic based on path
-        if (req.url.startsWith('/api/')) {
-          return 'https://ai-api.example.com' + req.url;
-        }
-        return 'https://ai-content.example.com';
-      },
-      logRedirects: true
+// ─── Example 2: Per-category routing ─────────────────────────────────────────
+
+async function categoryRoutingExample() {
+  await build({ env: 'production' });
+
+  use((req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
+
+    if (isAI(ua)) {
+      return res.redirect('https://ai.example.com' + req.url, 302);
     }
+
+    if (isCrawler(ua)) {
+      // Route search bots to an SEO-optimised version
+      return res.redirect('https://seo.example.com' + req.url, 302);
+    }
+
+    if (isBot(ua)) {
+      return res.redirect('https://bots.example.com' + req.url, 302);
+    }
+
+    next();
   });
 }
 
-// Example 3: Custom redirect rules
-async function customRulesExample() {
-  await build({
-    redirects: {
-      enabled: true,
-      customRules: [
-        // Rule 1: Block scrapers from admin area
-        {
-          name: 'Block admin scrapers',
-          condition: (req) => {
-            return req.url.startsWith('/admin') &&
-                   /scraper|bot|crawler/i.test(req.headers['user-agent']);
-          },
-          destination: '/forbidden',
-          statusCode: 403,
-          bypassThrottle: false  // Still apply throttling
-        },
+// ─── Example 3: Path-aware UA routing ────────────────────────────────────────
 
-        // Rule 2: Redirect old API clients
-        {
-          name: 'Redirect legacy clients',
-          condition: (req) => {
-            return req.headers['user-agent']?.includes('OldClient/1.0');
-          },
-          destination: (req) => '/v2' + req.url,
-          statusCode: 301  // Permanent redirect
-        },
+async function pathAwareExample() {
+  await build({ env: 'production' });
 
-        // Rule 3: Route AI requests to separate infrastructure
-        {
-          name: 'AI infrastructure routing',
-          condition: (req) => /GPTBot|Claude|Gemini/i.test(req.headers['user-agent']),
-          destination: (req) => {
-            const url = new URL(req.url, 'https://example.com');
-            return 'https://ai-backend.example.com' + url.pathname + url.search;
-          },
-          statusCode: 307,  // Temporary redirect (preserve method)
-          bypassThrottle: true
-        },
+  use((req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
 
-        // Rule 4: Detect unusual patterns
-        {
-          name: 'Unusual traffic patterns',
-          condition: (req) => {
-            // Check for rapid requests or suspicious patterns
-            const suspiciousPatterns = [
-              /SELECT.*FROM/i,      // SQL injection attempt
-              /<script>/i,          // XSS attempt
-              /\.\.\/\.\.\//,       // Path traversal
-            ];
-
-            return suspiciousPatterns.some(pattern =>
-              pattern.test(req.url) || pattern.test(req.headers['user-agent'])
-            );
-          },
-          destination: '/security-warning',
-          statusCode: 403
-        }
-      ],
-
-      // Fallback: redirect other bots
-      redirectBots: true,
-      destination: 'https://bots.example.com',
-      logRedirects: true
-    },
-
-    throttle: {
-      limit: 100,
-      window_ms: 60000
+    if (isAI(ua)) {
+      // Route AI to different backend based on path
+      const dest = req.url.startsWith('/api/')
+        ? 'https://ai-api.example.com' + req.url
+        : 'https://ai-content.example.com';
+      return res.redirect(dest, 302);
     }
+
+    // Allow bots through but flag them on req
+    if (isBot(ua))     req.isBot     = true;
+    if (isCrawler(ua)) req.isCrawler = true;
+
+    next();
   });
 
-  get('/', (req, res) => {
-    res.json({ message: 'Protected with custom rules' });
-  });
-
-  get('/forbidden', (req, res) => {
-    res.status(403).json({ error: 'Access denied' });
-  });
-
-  get('/security-warning', (req, res) => {
-    res.status(403).json({
-      error: 'Suspicious activity detected',
-      message: 'Your request has been logged'
+  get('/api/data', (req, res) => {
+    res.json({
+      data:      [1, 2, 3],
+      isBot:     !!req.isBot,
+      isCrawler: !!req.isCrawler
     });
   });
-
-  listen(3001);
-  console.log('✅ Server with custom rules on port 3001');
 }
 
-// Example 4: Per-category routing
-async function categoryRoutingExample() {
-  await build({
-    redirects: {
-      enabled: true,
-      redirectAI: true,
-      redirectBots: true,
-      redirectCrawlers: true,
+// ─── Example 4: Admin protection from bots ───────────────────────────────────
 
-      // Different destinations based on detection
-      destination: (req) => {
-        const ua = req.headers['user-agent'] || '';
+async function adminProtectionExample() {
+  await build({ env: 'production' });
 
-        // AI traffic → AI-specific infrastructure
-        if (/GPTBot|Claude|Gemini|Anthropic/i.test(ua)) {
-          return 'https://ai.example.com' + req.url;
-        }
+  use((req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
 
-        // Search bots → SEO-optimized version
-        if (/Googlebot|Bingbot|Baiduspider/i.test(ua)) {
-          return 'https://seo.example.com' + req.url;
-        }
-
-        // Archive crawlers → static version
-        if (/archive\.org|Wayback/i.test(ua)) {
-          return 'https://static.example.com' + req.url;
-        }
-
-        // Default bot destination
-        return 'https://bots.example.com';
-      },
-
-      statusCode: 302,
-      bypassThrottle: true,
-      logRedirects: true
+    if ((isBot(ua) || isCrawler(ua)) && req.url.startsWith('/admin')) {
+      return res.status(403).json({ error: 'Bots not permitted on admin endpoints' });
     }
+
+    next();
+  });
+
+  get('/admin/dashboard', (req, res) => {
+    res.json({ message: 'Admin dashboard — human users only' });
   });
 }
 
 // Run main example
 main().catch(console.error);
-
-// Comment to hide these examples:
-dynamicExample().catch(console.error);
-customRulesExample().catch(console.error);
-categoryRoutingExample().catch(console.error);

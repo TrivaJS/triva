@@ -1,212 +1,146 @@
 /**
  * HTTPS Integration Tests
- * Tests HTTPS server functionality
+ * Tests HTTPS server using class-based build API
+ * Gracefully skips if OpenSSL is unavailable
  */
 
-import assert from 'assert';
-import https from 'https';
-import { build, get, post, listen } from '../../lib/index.js';
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import assert    from 'assert';
+import https     from 'https';
+import fs        from 'fs';
+import path      from 'path';
+import os        from 'os';
+import { execSync }     from 'child_process';
 import { fileURLToPath } from 'url';
-import os from 'os';
+import { build } from '../../lib/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const port = 9998;
-let server;
-let certDir;
-let keyPath;
-let certPath;
+const PORT      = 9996;
+let server, certDir, keyPath, certPath;
 
-// Test suite
-const tests = {
-  async 'Setup - generate test certificates'() {
-    // Create temporary directory for test certificates
-    certDir = fs.mkdtempSync(path.join(os.tmpdir(), 'triva-test-'));
-    keyPath = path.join(certDir, 'test-key.pem');
-    certPath = path.join(certDir, 'test-cert.pem');
-    
-    // Generate self-signed certificate for testing
-    try {
-      const opensslCmd = process.platform === 'win32' ? 'openssl.exe' : 'openssl';
-      
-      execSync(
-        `${opensslCmd} req -x509 -newkey rsa:2048 -nodes -sha256 ` +
-        `-subj "/CN=localhost" ` +
-        `-keyout "${keyPath}" ` +
-        `-out "${certPath}" ` +
-        `-days 1`,
-        { stdio: 'pipe' }
-      );
-      
-      console.log('  📝 Test certificates generated');
-    } catch (err) {
-      throw new Error(
-        'OpenSSL not available. Install OpenSSL to run HTTPS tests.\n' +
-        '  Windows: https://slproweb.com/products/Win32OpenSSL.html\n' +
-        '  Or skip this test: npm run test:unit && npm run test:integration'
-      );
-    }
-  },
-
-  async 'Setup - build HTTPS application'() {
-    const key = fs.readFileSync(keyPath);
-    const cert = fs.readFileSync(certPath);
-    
-    await build({
-      env: 'test',
-      protocol: 'https',
-      ssl: {
-        key: key,
-        cert: cert
-      },
-      cache: {
-        type: 'memory',
-        retention: 60000
-      }
-    });
-
-    // Set up test routes
-    get('/api/test', (req, res) => {
-      res.json({ message: 'test', protocol: 'https' });
-    });
-
-    post('/api/data', async (req, res) => {
-      const body = await req.json();
-      res.status(201).json({ received: body, secure: true });
-    });
-
-    server = listen(port);
-    
-    // Wait for server to be ready
-    await new Promise(resolve => setTimeout(resolve, 200));
-  },
-
-  async 'HTTPS - GET request works'() {
-    const response = await makeRequest('GET', '/api/test');
-    assert.strictEqual(response.statusCode, 200);
-    
-    const data = JSON.parse(response.body);
-    assert.strictEqual(data.message, 'test');
-    assert.strictEqual(data.protocol, 'https');
-  },
-
-  async 'HTTPS - POST request works'() {
-    const payload = { name: 'test', value: 123 };
-    const response = await makeRequest('POST', '/api/data', JSON.stringify(payload));
-    
-    assert.strictEqual(response.statusCode, 201);
-    const data = JSON.parse(response.body);
-    assert.deepStrictEqual(data.received, payload);
-    assert.strictEqual(data.secure, true);
-  },
-
-  async 'HTTPS - Server type is HTTPS'() {
-    // Verify server is actually HTTPS by checking the protocol
-    const response = await makeRequest('GET', '/api/test');
-    const data = JSON.parse(response.body);
-    assert.strictEqual(data.protocol, 'https');
-  },
-
-  'Cleanup - close server'() {
-    if (server) {
-      server.close();
-    }
-    
-    // Clean up temporary certificates
-    if (certDir && fs.existsSync(certDir)) {
-      try {
-        if (fs.existsSync(keyPath)) fs.unlinkSync(keyPath);
-        if (fs.existsSync(certPath)) fs.unlinkSync(certPath);
-        fs.rmdirSync(certDir);
-        console.log('  🧹 Test certificates cleaned up');
-      } catch (err) {
-        // Ignore cleanup errors
-      }
-    }
-  }
-};
-
-// Helper function to make HTTPS requests
-function makeRequest(method, path, body = null) {
+function makeRequest(method, reqPath, body = null) {
   return new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'localhost',
-      port: port,
-      path: path,
-      method: method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      rejectUnauthorized: false // Accept self-signed certificates
+    const opts = {
+      hostname:            'localhost',
+      port:                PORT,
+      path:                reqPath,
+      method,
+      rejectUnauthorized:  false,
+      headers: body ? { 'Content-Type': 'application/json' } : {}
     };
 
-    const req = https.request(options, (res) => {
+    const req = https.request(opts, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        resolve({
-          statusCode: res.statusCode,
-          headers: res.headers,
-          body: data
-        });
-      });
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
     });
 
     req.on('error', reject);
-    
-    if (body) {
-      req.write(body);
-    }
-    
+    if (body) req.write(body);
     req.end();
   });
 }
 
-// Test runner
-async function runTests() {
-  console.log('🧪 Running HTTPS Tests\n');
-  
-  let passed = 0;
-  let failed = 0;
-  let skipped = false;
-  
-  for (const [name, test] of Object.entries(tests)) {
-    if (skipped) {
-      console.log(`  ⏭️  ${name}`);
-      continue;
+const tests = {
+  async 'Setup - generate test certificates'() {
+    certDir  = fs.mkdtempSync(path.join(os.tmpdir(), 'triva-https-test-'));
+    keyPath  = path.join(certDir, 'key.pem');
+    certPath = path.join(certDir, 'cert.pem');
+
+    const opensslCmd = process.platform === 'win32' ? 'openssl.exe' : 'openssl';
+    try {
+      execSync(
+        `${opensslCmd} req -x509 -newkey rsa:2048 -nodes -sha256 ` +
+        `-subj "/CN=localhost" -keyout "${keyPath}" -out "${certPath}" -days 1`,
+        { stdio: 'pipe' }
+      );
+    } catch {
+      throw new Error('OpenSSL not available. Install OpenSSL to run HTTPS tests.');
     }
-    
+  },
+
+  async 'Setup - build HTTPS application'() {
+    const buildInstance = new build({
+      env:      'test',
+      protocol: 'https',
+      ssl: {
+        key:  fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      },
+      cache: { type: 'memory', retention: 60000 }
+    });
+
+    buildInstance.get('/api/test', (req, res) => {
+      res.json({ message: 'test', protocol: 'https' });
+    });
+
+    buildInstance.post('/api/data', async (req, res) => {
+      const body = await req.json();
+      res.status(201).json({ received: body, secure: true });
+    });
+
+    server = buildInstance.listen(PORT);
+    await new Promise(resolve => setTimeout(resolve, 200));
+  },
+
+  async 'HTTPS - GET request works'() {
+    const r = await makeRequest('GET', '/api/test');
+    assert.strictEqual(r.statusCode, 200);
+    const body = JSON.parse(r.body);
+    assert.strictEqual(body.message, 'test');
+    assert.strictEqual(body.protocol, 'https');
+  },
+
+  async 'HTTPS - POST request works'() {
+    const payload = { name: 'test', value: 123 };
+    const r = await makeRequest('POST', '/api/data', JSON.stringify(payload));
+    assert.strictEqual(r.statusCode, 201);
+    const body = JSON.parse(r.body);
+    assert.deepStrictEqual(body.received, payload);
+    assert.strictEqual(body.secure, true);
+  },
+
+  async 'HTTPS - Server type is HTTPS'() {
+    const r = await makeRequest('GET', '/api/test');
+    assert.strictEqual(JSON.parse(r.body).protocol, 'https');
+  },
+
+  'Cleanup - close server and remove certs'() {
+    if (server) server.close();
+    try {
+      if (certDir && fs.existsSync(certDir)) {
+        if (fs.existsSync(keyPath))  fs.unlinkSync(keyPath);
+        if (fs.existsSync(certPath)) fs.unlinkSync(certPath);
+        fs.rmdirSync(certDir);
+      }
+    } catch { /* ignore */ }
+  }
+};
+
+async function runTests() {
+  console.log('🧪 Running HTTPS Integration Tests\n');
+  let passed = 0, failed = 0, skipped = false;
+
+  for (const [name, test] of Object.entries(tests)) {
+    if (skipped) { console.log(`  ⏭️  ${name}`); continue; }
+
     try {
       await test();
       console.log(`  ✅ ${name}`);
       passed++;
-    } catch (error) {
+    } catch (err) {
       console.log(`  ❌ ${name}`);
-      console.error(`     ${error.message}`);
+      console.error(`     ${err.message}`);
       failed++;
-      
-      // If setup fails (OpenSSL missing), skip remaining tests
       if (name.includes('Setup - generate')) {
         console.log('\n  ⚠️  Skipping remaining HTTPS tests (OpenSSL not available)\n');
         skipped = true;
       }
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-  
-  // Don't fail if OpenSSL is missing (optional dependency)
-  if (skipped) {
-    console.log('ℹ️  HTTPS tests skipped - install OpenSSL to enable');
-    process.exit(0);
-  }
-  
-  if (failed > 0) {
-    process.exit(1);
-  }
-  
+  if (skipped) { console.log('ℹ️  HTTPS tests skipped — install OpenSSL to enable'); process.exit(0); }
+  if (failed > 0) process.exit(1);
   process.exit(0);
 }
 

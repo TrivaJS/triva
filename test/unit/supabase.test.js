@@ -1,26 +1,24 @@
 /**
- * Supabase Adapter Tests
- *
- * Note: These tests require a live Supabase instance
- * Set SUPABASE_URL and SUPABASE_KEY environment variables to run
+ * Supabase Adapter Unit Tests
+ * Requires: SUPABASE_URL and SUPABASE_KEY environment variables
+ * Gracefully skips when credentials are not present
  */
 
 import assert from 'assert';
 import { SupabaseAdapter } from '../../lib/database/supabase.js';
 
-const hasSupabaseCredentials = process.env.SUPABASE_URL && process.env.SUPABASE_KEY;
+const hasCredentials = process.env.SUPABASE_URL && process.env.SUPABASE_KEY;
 
-// Skip tests if credentials not provided
-if (!hasSupabaseCredentials) {
-  console.log('⏭️  Skipping Supabase tests (credentials not provided)');
+if (!hasCredentials) {
+  console.log('⏭️  Skipping Supabase unit tests (credentials not provided)');
   console.log('   Set SUPABASE_URL and SUPABASE_KEY to run these tests');
   process.exit(0);
 }
 
 const adapter = new SupabaseAdapter({
-  url: process.env.SUPABASE_URL,
-  key: process.env.SUPABASE_KEY,
-  tableName: 'triva_cache_test'  // Use test table
+  url:       process.env.SUPABASE_URL,
+  key:       process.env.SUPABASE_KEY,
+  tableName: 'triva_cache_test'
 });
 
 const tests = {
@@ -43,7 +41,7 @@ const tests = {
   },
 
   async 'Supabase - returns null for non-existent keys'() {
-    const value = await adapter.get('test:nonexistent');
+    const value = await adapter.get('test:nonexistent:' + Date.now());
     assert.strictEqual(value, null);
   },
 
@@ -51,25 +49,19 @@ const tests = {
     await adapter.set('test:delete', 'value');
     const deleted = await adapter.delete('test:delete');
     assert.strictEqual(deleted, true);
-
-    const value = await adapter.get('test:delete');
-    assert.strictEqual(value, null);
+    assert.strictEqual(await adapter.get('test:delete'), null);
   },
 
   async 'Supabase - expires keys with TTL'() {
-    await adapter.set('test:ttl', 'expires', 100); // 100ms TTL
+    await adapter.set('test:ttl', 'expires', 100);
+    assert.strictEqual(await adapter.get('test:ttl'), 'expires');
 
-    let value = await adapter.get('test:ttl');
-    assert.strictEqual(value, 'expires');
-
-    // Wait for expiration
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    value = await adapter.get('test:ttl');
-    assert.strictEqual(value, null);
+    assert.strictEqual(await adapter.get('test:ttl'), null);
   },
 
-  async 'Supabase - lists keys'() {
+  async 'Supabase - lists keys with pattern'() {
     await adapter.set('list:1', 'a');
     await adapter.set('list:2', 'b');
     await adapter.set('other:key', 'c');
@@ -82,24 +74,16 @@ const tests = {
 
   async 'Supabase - checks key existence'() {
     await adapter.set('test:exists', 'value');
-
-    const exists = await adapter.has('test:exists');
-    assert.strictEqual(exists, true);
-
-    const notExists = await adapter.has('test:notexists');
-    assert.strictEqual(notExists, false);
+    assert.strictEqual(await adapter.has('test:exists'), true);
+    assert.strictEqual(await adapter.has('test:notexists:' + Date.now()), false);
   },
 
   async 'Supabase - clears all keys'() {
     await adapter.set('clear:1', 'a');
     await adapter.set('clear:2', 'b');
-
     await adapter.clear();
-
-    const value1 = await adapter.get('clear:1');
-    const value2 = await adapter.get('clear:2');
-    assert.strictEqual(value1, null);
-    assert.strictEqual(value2, null);
+    assert.strictEqual(await adapter.get('clear:1'), null);
+    assert.strictEqual(await adapter.get('clear:2'), null);
   },
 
   async 'Cleanup - disconnect'() {
@@ -108,31 +92,24 @@ const tests = {
   }
 };
 
-// Test runner
 async function runTests() {
-  console.log('🧪 Running Supabase Tests\n');
-
-  let passed = 0;
-  let failed = 0;
+  console.log('🧪 Running Supabase Unit Tests\n');
+  let passed = 0, failed = 0;
 
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
       console.log(`  ✅ ${name}`);
       passed++;
-    } catch (error) {
+    } catch (err) {
       console.log(`  ❌ ${name}`);
-      console.error(`     ${error.message}`);
+      console.error(`     ${err.message}`);
       failed++;
     }
   }
 
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-
-  if (failed > 0) {
-    process.exit(1);
-  }
-
+  if (failed > 0) process.exit(1);
   process.exit(0);
 }
 

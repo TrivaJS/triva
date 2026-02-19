@@ -1,30 +1,30 @@
 /**
  * SQLite Database Example
- * 
+ *
  * Prerequisites:
  * npm install sqlite3
  */
 
-import { build, get, post, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 async function main() {
-  await build({
+  const instanceBuild = new build({
     env: 'production',
-    
+
     cache: {
       type: 'sqlite',
       database: {
         filename: './cache.sqlite'
       }
     },
-    
+
     throttle: {
       limit: 100,
       window_ms: 60000
     }
   });
 
-  get('/', (req, res) => {
+  instanceBuild.get('/', (req, res) => {
     res.json({
       message: 'SQLite Database Example',
       database: 'sqlite3',
@@ -32,7 +32,7 @@ async function main() {
     });
   });
 
-  get('/api/users', (req, res) => {
+  instanceBuild.get('/api/users', (req, res) => {
     // Cached in SQLite
     res.json({
       users: [
@@ -42,7 +42,7 @@ async function main() {
     });
   });
 
-  post('/api/users', async (req, res) => {
+  instanceBuild.post('/api/users', async (req, res) => {
     const user = await req.json();
     res.status(201).json({
       message: 'User created',
@@ -50,8 +50,8 @@ async function main() {
     });
   });
 
-  listen(3000);
-  
+  instanceBuild.listen(3000);
+
   console.log('\n✅ Server running with SQLite database');
   console.log('📁 Database file: ./cache.sqlite\n');
 }
