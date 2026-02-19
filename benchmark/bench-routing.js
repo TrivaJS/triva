@@ -1,6 +1,6 @@
 
 import { performance } from 'perf_hooks';
-import { build, cache } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 class BenchmarkRunner {
   constructor() {

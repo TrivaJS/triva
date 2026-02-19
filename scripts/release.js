@@ -5,7 +5,7 @@
  * Prepares the package for npm publishing
  */
 
-import { readFile, writeFile, copyFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -59,9 +59,9 @@ async function main() {
   // 4. Update version
   console.log(`4️⃣  Bumping ${version} version...`);
   try {
-    execSync(`npm version ${version} --no-git-tag-version`, { 
-      cwd: rootDir, 
-      stdio: 'inherit' 
+    execSync(`npm version ${version} --no-git-tag-version`, {
+      cwd: rootDir,
+      stdio: 'inherit'
     });
     console.log('✅ Version updated\n');
   } catch (err) {
@@ -103,7 +103,7 @@ async function main() {
 async function updateChangelog(version) {
   const changelogPath = join(rootDir, 'CHANGELOG.md');
   const date = new Date().toISOString().split('T')[0];
-  
+
   let changelog;
   try {
     changelog = await readFile(changelogPath, 'utf-8');
@@ -116,7 +116,7 @@ async function updateChangelog(version) {
 
   // Insert after header
   const lines = changelog.split('\n');
-  const headerEnd = lines.findIndex((line, i) => 
+  const headerEnd = lines.findIndex((line, i) =>
     i > 0 && line.startsWith('## ')
   );
 

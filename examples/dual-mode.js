@@ -3,7 +3,7 @@
  * Run both HTTP and HTTPS servers simultaneously
  */
 
-import { build, get } from '../lib/index.js';
+import { build } from '../lib/index.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
