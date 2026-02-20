@@ -28,8 +28,8 @@ function ensureCertificates() {
   }
 }
 
-// Load test certificate to trust the local HTTPS server
-const ca = fs.readFileSync('./cert.pem');
+
+
 
 async function runBenchmark() {
   console.log('========================================');
