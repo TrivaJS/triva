@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert';
-import { SupabaseAdapter } from '../../lib/db-adapters.js';
+import { SupabaseAdapter } from '../../lib/database/index.js';
 
 // Check for credentials
 const hasCredentials = process.env.SUPABASE_URL && process.env.SUPABASE_KEY;
@@ -65,19 +65,19 @@ const tests = {
     await adapter.set('test:delete', 'value');
     const deleted = await adapter.delete('test:delete');
     assert.strictEqual(deleted, true);
-    
+
     const value = await adapter.get('test:delete');
     assert.strictEqual(value, null);
   },
 
   async 'Supabase - expires keys with TTL'() {
     await adapter.set('test:ttl', 'expires', 100);
-    
+
     let value = await adapter.get('test:ttl');
     assert.strictEqual(value, 'expires');
-    
+
     await new Promise(resolve => setTimeout(resolve, 150));
-    
+
     value = await adapter.get('test:ttl');
     assert.strictEqual(value, null);
   },
@@ -86,7 +86,7 @@ const tests = {
     await adapter.set('list:1', 'a');
     await adapter.set('list:2', 'b');
     await adapter.set('other:key', 'c');
-    
+
     const keys = await adapter.keys('list:*');
     assert.ok(keys.includes('list:1'));
     assert.ok(keys.includes('list:2'));
@@ -94,10 +94,10 @@ const tests = {
 
   async 'Supabase - checks key existence'() {
     await adapter.set('test:exists', 'value');
-    
+
     const exists = await adapter.has('test:exists');
     assert.strictEqual(exists, true);
-    
+
     const notExists = await adapter.has('test:notexists');
     assert.strictEqual(notExists, false);
   },
@@ -105,7 +105,7 @@ const tests = {
   async 'Supabase - clears all keys'() {
     await adapter.set('clear:1', 'a');
     await adapter.set('clear:2', 'b');
-    
+
     const count = await adapter.clear();
     assert.ok(count >= 2);
   },
@@ -120,10 +120,10 @@ const tests = {
 // Test runner
 async function runTests() {
   console.log('🧪 Running Supabase Tests\n');
-  
+
   let passed = 0;
   let failed = 0;
-  
+
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
@@ -135,13 +135,13 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-  
+
   if (failed > 0) {
     process.exit(1);
   }
-  
+
   process.exit(0);
 }
 

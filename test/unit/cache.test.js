@@ -111,7 +111,7 @@ const tests = {
   },
 
   async 'Cache - stats() returns object with size'() {
-    const instanceBuild = new build({ cache: { type: 'memory' } });
+    new build({ cache: { type: 'memory' } });
     await cache.set('stats:test', 'value');
     const stats = await cache.stats();
     assert.ok(stats !== null && typeof stats === 'object');

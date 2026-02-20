@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert';
-import { MongoDBAdapter } from '../../lib/db-adapters.js';
+import { MongoDBAdapter } from '../../lib/database/index.js';
 
 // Check for credentials
 const hasCredentials = !!process.env.MONGODB_URI;
@@ -65,7 +65,7 @@ const tests = {
     await adapter.set('test:delete', 'value');
     const deleted = await adapter.delete('test:delete');
     assert.strictEqual(deleted, true);
-    
+
     const value = await adapter.get('test:delete');
     assert.strictEqual(value, null);
   },
@@ -73,13 +73,13 @@ const tests = {
   async 'MongoDB - expires keys with TTL'() {
     // MongoDB TTL index runs every 60 seconds, so we test with immediate manual check
     await adapter.set('test:ttl', 'expires', 1000); // 1 second
-    
+
     let value = await adapter.get('test:ttl');
     assert.strictEqual(value, 'expires');
-    
+
     // Wait for expiration
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // MongoDB TTL index may not have run yet, so manually check expiration
     const doc = await adapter.collection.findOne({ _id: 'test:ttl' });
     if (doc && doc.expiresAt && doc.expiresAt <= new Date()) {
@@ -97,7 +97,7 @@ const tests = {
     await adapter.set('list:1', 'a');
     await adapter.set('list:2', 'b');
     await adapter.set('other:key', 'c');
-    
+
     const keys = await adapter.keys('list:*');
     assert.ok(keys.includes('list:1'));
     assert.ok(keys.includes('list:2'));
@@ -105,10 +105,10 @@ const tests = {
 
   async 'MongoDB - checks key existence'() {
     await adapter.set('test:exists', 'value');
-    
+
     const exists = await adapter.has('test:exists');
     assert.strictEqual(exists, true);
-    
+
     const notExists = await adapter.has('test:notexists');
     assert.strictEqual(notExists, false);
   },
@@ -116,7 +116,7 @@ const tests = {
   async 'MongoDB - clears all keys'() {
     await adapter.set('clear:1', 'a');
     await adapter.set('clear:2', 'b');
-    
+
     const count = await adapter.clear();
     assert.ok(count >= 2);
   },
@@ -131,10 +131,10 @@ const tests = {
 // Test runner
 async function runTests() {
   console.log('🧪 Running MongoDB Tests\n');
-  
+
   let passed = 0;
   let failed = 0;
-  
+
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
@@ -146,13 +146,13 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
-  
+
   if (failed > 0) {
     process.exit(1);
   }
-  
+
   process.exit(0);
 }
 

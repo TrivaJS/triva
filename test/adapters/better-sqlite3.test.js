@@ -3,7 +3,7 @@
  */
 
 import assert from 'assert';
-import { BetterSQLite3Adapter } from '../../lib/database/better-sqlite3.js';
+import { BetterSQLite3Adapter } from '../../lib/database/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';

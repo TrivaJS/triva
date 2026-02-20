@@ -89,7 +89,7 @@ async function runBenchmark() {
   for (let i = 0; i < REQUESTS; i++) {
     const promise = new Promise((resolve, reject) => {
       const req = https.get({
-        ca: fs.readFileSync('./cert.pem') // Trust the local self-signed cert
+        ca: fs.readFileSync('./cert.pem'), // Trust the local self-signed cert
         port: PORT,
         path: '/',
         rejectUnauthorized: false // Accept self-signed cert

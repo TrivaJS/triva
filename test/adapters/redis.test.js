@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert';
-import { RedisAdapter } from '../../lib/db-adapters.js';
+import { RedisAdapter } from '../../lib/database/index.js';
 
 // Check for credentials (or use defaults)
 const hasCredentials = process.env.REDIS_HOST || process.env.REDIS_URL;
@@ -80,7 +80,7 @@ const tests = {
     await adapter.set('test:delete', 'value');
     const deleted = await adapter.delete('test:delete');
     assert.strictEqual(deleted, true);
-    
+
     const value = await adapter.get('test:delete');
     assert.strictEqual(value, null);
   },
@@ -89,13 +89,13 @@ const tests = {
     if (!redisAccessible) return;
     // Use 2 seconds (2000ms) to ensure it converts to at least 2 seconds in Redis
     await adapter.set('test:ttl', 'expires', 2000);
-    
+
     let value = await adapter.get('test:ttl');
     assert.strictEqual(value, 'expires');
-    
+
     // Wait for expiration (2.5 seconds to be safe)
     await new Promise(resolve => setTimeout(resolve, 2500));
-    
+
     value = await adapter.get('test:ttl');
     assert.strictEqual(value, null);
   },
@@ -105,7 +105,7 @@ const tests = {
     await adapter.set('list:1', 'a');
     await adapter.set('list:2', 'b');
     await adapter.set('other:key', 'c');
-    
+
     const keys = await adapter.keys('list:*');
     assert.ok(keys.includes('list:1'));
     assert.ok(keys.includes('list:2'));
@@ -114,10 +114,10 @@ const tests = {
   async 'Redis - checks key existence'() {
     if (!redisAccessible) return;
     await adapter.set('test:exists', 'value');
-    
+
     const exists = await adapter.has('test:exists');
     assert.strictEqual(exists, true);
-    
+
     const notExists = await adapter.has('test:notexists');
     assert.strictEqual(notExists, false);
   },
@@ -126,9 +126,9 @@ const tests = {
     if (!redisAccessible) return;
     await adapter.set('clear:1', 'a');
     await adapter.set('clear:2', 'b');
-    
+
     await adapter.clear();
-    
+
     const value = await adapter.get('clear:1');
     assert.strictEqual(value, null);
   },
@@ -143,11 +143,11 @@ const tests = {
 // Test runner
 async function runTests() {
   console.log('🧪 Running Redis Tests\n');
-  
+
   let passed = 0;
   let failed = 0;
   let skipped = 0;
-  
+
   for (const [name, test] of Object.entries(tests)) {
     try {
       await test();
@@ -164,13 +164,13 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed, ${skipped} skipped\n`);
-  
+
   if (failed > 0) {
     process.exit(1);
   }
-  
+
   process.exit(0);
 }
 

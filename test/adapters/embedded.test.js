@@ -3,7 +3,7 @@
  */
 
 import assert from 'assert';
-import { EmbeddedAdapter } from '../../lib/database/embedded.js';
+import { EmbeddedAdapter } from '../../lib/database/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';

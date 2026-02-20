@@ -9,7 +9,6 @@ import http   from 'http';
 import { build, cache} from '../../lib/index.js';
 
 const PORT    = 9997;
-const baseUrl = `http://localhost:${PORT}`;
 let server;
 
 // ─── test helpers ────────────────────────────────────────────────────────────

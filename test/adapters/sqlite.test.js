@@ -3,7 +3,7 @@
  */
 
 import assert from 'assert';
-import { SQLiteAdapter } from '../../lib/database/sqlite.js';
+import { SQLiteAdapter } from '../../lib/database/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
