@@ -92,7 +92,6 @@ async function runBenchmark() {
         ca: fs.readFileSync('./cert.pem'), // Trust the local self-signed cert
         port: PORT,
         path: '/',
-        rejectUnauthorized: false // Accept self-signed cert
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
@@ -139,7 +138,7 @@ async function runBenchmark() {
         hostname: 'localhost',
         port: PORT,
         path: '/text',
-        ca
+        ca: fs.readFileSync('./cert.pem')
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
