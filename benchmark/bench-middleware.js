@@ -1,6 +1,6 @@
 
 import { performance } from 'perf_hooks';
-import { build, use } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 class BenchmarkRunner {
   constructor() {
@@ -54,11 +54,11 @@ class BenchmarkRunner {
   }
 
   printSummary() {
-      console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
-      this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-      console.log(`\n${'='.repeat(70)}\n`);
+        console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+        this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
+        console.log(`\n${'='.repeat(70)}\n`);
+      }
     }
-  }
 
 /**
  * Middleware Performance Benchmark
@@ -71,9 +71,10 @@ async function benchmarkMiddleware() {
 
   const runner = new BenchmarkRunner();
 
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory' }
   });
+  instanceBuild.listen(3001);
 
   // Benchmark: Single middleware
   const middleware1 = (req, res, next) => {
@@ -235,6 +236,8 @@ async function benchmarkMiddleware() {
   runner.printResult(largeBodyResult);
 
   runner.printSummary();
+  instanceBuild.close();
+  process.exit(1);
 }
 
 benchmarkMiddleware().catch(err => {

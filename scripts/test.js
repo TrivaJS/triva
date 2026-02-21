@@ -17,11 +17,12 @@ console.log('🧪 Triva Test Suite (Zero Dependencies)\n');
 
 async function runTests(type = 'all') {
   const testDirs = {
-    unit: resolve(rootDir, 'test/unit'),
-    integration: resolve(rootDir, 'test/integration')
+    unit:        resolve(rootDir, 'test/unit'),
+    integration: resolve(rootDir, 'test/integration'),
+    adapters:    resolve(rootDir, 'test/adapters')
   };
 
-  const types = type === 'all' ? ['unit', 'integration'] : [type];
+  const types = type === 'all' ? ['unit', 'integration', 'adapters'] : [type];
   let totalPassed = 0;
   let totalFailed = 0;
 
@@ -32,7 +33,12 @@ async function runTests(type = 'all') {
 
     try {
       const files = await readdir(testDir);
-      const testFiles = files.filter(f => f.endsWith('.test.js'));
+      const testFiles = files.filter(f => f.endsWith('.test.js')).sort();
+
+      if (testFiles.length === 0) {
+        console.log(`  ⚠️  No test files found in ${testType}/`);
+        continue;
+      }
 
       for (const file of testFiles) {
         const testPath = resolve(testDir, file);
@@ -58,7 +64,6 @@ async function runTests(type = 'all') {
   if (totalFailed > 0) {
     process.exit(1);
   }
-
 }
 
 function runTestFile(filepath) {
@@ -77,9 +82,9 @@ const args = process.argv.slice(2);
 const testType = args[0] || 'all';
 
 // Validate test type
-if (!['all', 'unit', 'integration'].includes(testType)) {
+if (!['all', 'unit', 'integration', 'adapters'].includes(testType)) {
   console.error(`❌ Invalid test type: ${testType}`);
-  console.log('Usage: npm run test [all|unit|integration]');
+  console.log('Usage: node scripts/test.js [all|unit|integration|adapters]');
   process.exit(1);
 }
 

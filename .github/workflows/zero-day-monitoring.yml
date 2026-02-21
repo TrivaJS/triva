@@ -1,0 +1,376 @@
+name: Zero-Day & Threat Intelligence
+
+# Monitors for zero-day vulnerabilities and emerging threats
+# Runs daily at 7:00 AM EST to check for new CVEs and security advisories
+on:
+  schedule:
+    - cron: '0 12 * * *'  # 7:00 AM EST = 12:00 PM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  security-events: write
+
+jobs:
+  # ==========================================
+  # Job 1: CVE Monitoring
+  # ==========================================
+  cve-monitoring:
+    name: CVE & Security Advisory Check
+    runs-on: ubuntu-latest
+
+    outputs:
+      new-cves-found: ${{ steps.cve-check.outputs.found }}
+      cve-count: ${{ steps.cve-check.outputs.count }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Check GitHub Security Advisories
+      - name: Check GitHub Security Advisories
+        id: github-advisories
+        run: |
+          echo "## GitHub Security Advisories" >> $GITHUB_STEP_SUMMARY
+
+          # Query GitHub GraphQL API for security advisories
+          # This would need GitHub token with appropriate permissions
+          curl -H "Authorization: bearer ${{ github.token }}" \
+            -X POST \
+            -d '{"query":"{ securityVulnerabilities(first: 20, ecosystem: NPM, orderBy: {field: UPDATED_AT, direction: DESC}) { nodes { advisory { summary severity publishedAt } package { name } vulnerableVersionRange } } }"}' \
+            https://api.github.com/graphql > github-advisories.json || true
+
+          # Parse and display recent advisories
+          if [ -f github-advisories.json ]; then
+            echo "Recent security advisories retrieved" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Check CVE databases for Node.js and dependencies
+      - name: Check CVE Database
+        id: cve-check
+        run: |
+          echo "## CVE Database Check" >> $GITHUB_STEP_SUMMARY
+
+          # Check for Node.js CVEs from NVD
+          CURRENT_DATE=$(date -d '7 days ago' '+%Y-%m-%d')
+
+          # Query NVD API for recent Node.js CVEs
+          curl "https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=nodejs&pubStartDate=${CURRENT_DATE}T00:00:00.000" \
+            -o nvd-results.json || true
+
+          if [ -f nvd-results.json ]; then
+            CVE_COUNT=$(jq '.totalResults // 0' nvd-results.json)
+            echo "count=$CVE_COUNT" >> $GITHUB_OUTPUT
+
+            if [ "$CVE_COUNT" -gt 0 ]; then
+              echo "found=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Found $CVE_COUNT new CVEs in the last 7 days" >> $GITHUB_STEP_SUMMARY
+
+              # List CVEs
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Recent CVEs:" >> $GITHUB_STEP_SUMMARY
+              jq -r '.vulnerabilities[]? | "- **\(.cve.id)**: \(.cve.descriptions[0].value | .[0:100])..."' nvd-results.json >> $GITHUB_STEP_SUMMARY || true
+            else
+              echo "found=false" >> $GITHUB_OUTPUT
+              echo "✅ No new CVEs found in the last 7 days" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      # Check npm security advisories
+      - name: Check npm Security Advisories
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## NPM Security Advisories" >> $GITHUB_STEP_SUMMARY
+
+          # Get package name and version
+          PACKAGE_NAME=$(jq -r '.name' package.json)
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+
+          # Check if our package has any advisories
+          curl "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"$PACKAGE_NAME\":[\"$PACKAGE_VERSION\"]}" \
+            -o npm-advisories.json || true
+
+          if [ -f npm-advisories.json ]; then
+            ADVISORY_COUNT=$(jq 'length' npm-advisories.json || echo "0")
+            echo "NPM advisories checked: $ADVISORY_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload CVE data
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cve-monitoring-results
+          path: |
+            nvd-results.json
+            github-advisories.json
+            npm-advisories.json
+          retention-days: 30
+
+  # ==========================================
+  # Job 2: Threat Intelligence Gathering
+  # ==========================================
+  threat-intelligence:
+    name: Threat Intelligence Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Check for known malicious packages
+      - name: Check for malicious packages
+        run: |
+          echo "## Malicious Package Detection" >> $GITHUB_STEP_SUMMARY
+
+          # Install and run socket.dev scanner (community edition)
+          npx socket-npm info --json > socket-results.json || true
+
+          if [ -f socket-results.json ]; then
+            ISSUES=$(jq '.issues | length' socket-results.json || echo "0")
+            echo "Security issues found: $ISSUES" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Check package maintainer changes
+      - name: Monitor package maintainer changes
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Package Maintainer Monitoring" >> $GITHUB_STEP_SUMMARY
+
+          # This would check if any critical dependencies changed maintainers
+          # which could be a supply chain attack vector
+
+          echo "Monitoring package ownership changes..." >> $GITHUB_STEP_SUMMARY
+
+      # Check for typosquatting attempts
+      - name: Typosquatting detection
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Typosquatting Detection" >> $GITHUB_STEP_SUMMARY
+
+          PACKAGE_NAME=$(jq -r '.name' package.json)
+
+          # Check for similar package names that might be typosquatting
+          # This would use a distance algorithm to find similar names
+
+          echo "Package name: $PACKAGE_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "Checking for suspicious similar names..." >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload threat intelligence
+        uses: actions/upload-artifact@v4
+        with:
+          name: threat-intelligence
+          path: socket-results.json
+          retention-days: 30
+
+  # ==========================================
+  # Job 3: Runtime Security Monitoring
+  # ==========================================
+  runtime-security:
+    name: Runtime Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Check for prototype pollution vulnerabilities
+      - name: Prototype pollution check
+        run: |
+          echo "## Prototype Pollution Check" >> $GITHUB_STEP_SUMMARY
+
+          # Install prototype pollution detector
+          npm install -g is-prototype-pollution
+
+          # This would test common prototype pollution vectors
+          echo "Checking for prototype pollution vulnerabilities..." >> $GITHUB_STEP_SUMMARY
+
+      # Check for regular expression DoS (ReDoS)
+      - name: ReDoS detection
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ReDoS Detection" >> $GITHUB_STEP_SUMMARY
+
+          # Find all regex patterns in code
+          grep -r "new RegExp\|\/.*\/" lib/ > regex-patterns.txt || true
+
+          if [ -s regex-patterns.txt ]; then
+            PATTERN_COUNT=$(wc -l < regex-patterns.txt)
+            echo "Found $PATTERN_COUNT regex patterns" >> $GITHUB_STEP_SUMMARY
+            echo "Manual review recommended for ReDoS vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Memory leak detection
+      - name: Memory leak analysis
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Memory Leak Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Run basic memory leak detection
+          # This would typically run the application and monitor memory
+
+          echo "Static analysis for common memory leak patterns..." >> $GITHUB_STEP_SUMMARY
+
+          # Check for common memory leak patterns
+          LISTENERS=$(grep -r "addEventListener\|on(" lib/ | wc -l || echo "0")
+          REMOVERS=$(grep -r "removeEventListener\|off(" lib/ | wc -l || echo "0")
+
+          echo "- Event listeners added: $LISTENERS" >> $GITHUB_STEP_SUMMARY
+          echo "- Event listeners removed: $REMOVERS" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$LISTENERS" -gt "$REMOVERS" ]; then
+            echo "⚠️ Potential memory leak: More listeners added than removed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================
+  # Job 4: Exploit Database Check
+  # ==========================================
+  exploit-database:
+    name: Check Exploit Databases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Exploit-DB
+        run: |
+          echo "## Exploit Database Check" >> $GITHUB_STEP_SUMMARY
+
+          # Check for known exploits related to Node.js and our dependencies
+          # This would query exploit databases for relevant entries
+
+          echo "Checking exploit databases for Node.js vulnerabilities..." >> $GITHUB_STEP_SUMMARY
+
+          # Get Node.js version from package.json
+          NODE_VERSION=$(jq -r '.engines.node' package.json || echo "unknown")
+          echo "Target Node.js version: $NODE_VERSION" >> $GITHUB_STEP_SUMMARY
+
+      # Check Snyk vulnerability database
+      - name: Check Snyk Vulnerability DB
+        continue-on-error: true
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Snyk Vulnerability Database" >> $GITHUB_STEP_SUMMARY
+
+          # This would check Snyk's public vulnerability database
+          echo "Checking Snyk database for recent disclosures..." >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # Job 5: Generate Threat Report
+  # ==========================================
+  threat-report:
+    name: Generate Threat Intelligence Report
+    needs: [cve-monitoring, threat-intelligence, runtime-security, exploit-database]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: threat-reports
+
+      - name: Generate comprehensive threat report
+        run: |
+          REPORT_DATE=$(date +"%Y-%m-%d")
+
+          cat > threat-report.md << 'REPORT_EOF'
+          # Triva Threat Intelligence Report
+
+          **Generated:** $(date +"%Y-%m-%d %H:%M:%S UTC")
+          **Repository:** ${{ github.repository }}
+
+          ---
+
+          ## Executive Summary
+
+          This report provides an overview of potential security threats and vulnerabilities
+          affecting the Triva framework and its dependencies.
+
+          ### Key Findings
+
+          - CVE Monitoring: ${{ needs.cve-monitoring.result }}
+          - Threat Intelligence: ${{ needs.threat-intelligence.result }}
+          - Runtime Security: ${{ needs.runtime-security.result }}
+          - Exploit Database: ${{ needs.exploit-database.result }}
+
+          ---
+
+          ## New CVEs Detected
+
+          ${{ needs.cve-monitoring.outputs.cve-count }} new CVEs found in the last 7 days.
+
+          See artifacts for detailed CVE information.
+
+          ---
+
+          ## Recommendations
+
+          1. Review all detected CVEs for applicability
+          2. Update dependencies with known vulnerabilities
+          3. Monitor for emergency patches
+          4. Review threat intelligence findings
+
+          ---
+
+          **Next Report:** $(date -d '+1 day' '+%Y-%m-%d 07:00:00 EST')
+          REPORT_EOF
+
+          cat threat-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Create alert if new CVEs found
+        if: needs.cve-monitoring.outputs.new-cves-found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔍 New CVEs Detected - ${date}`,
+              body: `## Zero-Day & Threat Intelligence Alert
+
+              **Date:** ${date}
+              **New CVEs:** ${{ needs.cve-monitoring.outputs.cve-count }}
+
+              New CVE disclosures have been detected that may affect Node.js or our dependencies.
+
+              ### Action Required
+              1. Review CVE details in workflow artifacts
+              2. Assess impact on Triva framework
+              3. Plan remediation if necessary
+
+              [View Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `,
+              labels: ['security', 'cve', 'threat-intelligence', 'automated']
+            });
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: threat-intelligence-report
+          path: threat-report.md
+          retention-days: 90

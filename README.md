@@ -6,11 +6,11 @@
 
 ## Getting Started
 
-Designed to be accessable for Enterprise Enviornments, and additionally small-scale projects with a large scale goal, Triva is a Node HTTP Server Framework, with a focus on the infrastructure developers are looking for the most.
+Triva is an Open-Source, Enterprise-Grade Node.js HTTP & HTTPS Framework, facilitating crucial middleware, logging, and visibility-focused infrastructure by default for production environments. Our framework focuses on consolidating what would typically be a multitude of dependencies and individual frameworks into a single one.
 
-- Visit our [Getting Started]() guide to begin building today.
+- Visit our [Getting Started](https://docs.trivajs.com/v1/getting-started) guide to begin building today.
 - Visit our [Extensions Overivew]() for additional resources & experience enhancing tools.
 
 ## Documentation
 
-Visit [docs.trivajs.com]() for a complete overview of our documentation & guides.
+Visit [docs.trivajs.com](https://docs.trivajs.com/v1/getting-started) for a complete overview of our documentation & guides.

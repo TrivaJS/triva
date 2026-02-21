@@ -75,11 +75,11 @@ class BenchmarkRunner {
   printSummary() {
     console.log('\n' + '='.repeat(70));
     console.log('\n📈 Benchmark Summary\n');
-    
+
     this.results.forEach(r => {
       console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`);
     });
-    
+
     console.log('\n' + '='.repeat(70) + '\n');
   }
 }
@@ -90,9 +90,10 @@ async function runCacheBenchmarks() {
   const runner = new BenchmarkRunner();
 
   // Initialize with memory cache
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory', retention: 3600000 }
   });
+  instanceBuild.listen(3001);
 
   // Benchmark: Set operation
   let counter = 0;
@@ -210,13 +211,14 @@ async function runCacheBenchmarks() {
   );
 
   runner.printSummary();
-  
+
   // Shutdown cache to clear timers
   if (cache && cache.adapter) {
     await cache.adapter.disconnect();
   }
-  
+
   // Force exit after a short delay
+  instanceBuild.close();
   setTimeout(() => process.exit(0), 100);
 }
 

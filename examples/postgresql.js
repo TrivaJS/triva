@@ -3,13 +3,13 @@
  * Shows how to use Triva with PostgreSQL for enterprise caching
  */
 
-import { build, get, post, listen, cache } from '../lib/index.js';
+import { build, cache } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting PostgreSQL Example...\n');
 
   // Build with PostgreSQL configuration
-  await build({
+  const instanceBuild = new build({
     env: 'production',
     cache: {
       type: 'postgresql',
@@ -46,7 +46,7 @@ async function main() {
   console.log('✅ Triva built with PostgreSQL!\n');
 
   // Complex query caching
-  get('/api/reports/sales', async (req, res) => {
+  instanceBuild.get('/api/reports/sales', async (req, res) => {
     const { startDate, endDate } = req.query;
     const cacheKey = `report:sales:${startDate}:${endDate}`;
 
@@ -80,7 +80,7 @@ async function main() {
   });
 
   // User preferences caching
-  get('/api/users/:id/preferences', async (req, res) => {
+  instanceBuild.get('/api/users/:id/preferences', async (req, res) => {
     const cacheKey = `user:${req.params.id}:preferences`;
 
     const cached = await cache.get(cacheKey);
@@ -102,7 +102,7 @@ async function main() {
     res.json(preferences);
   });
 
-  post('/api/users/:id/preferences', async (req, res) => {
+  instanceBuild.post('/api/users/:id/preferences', async (req, res) => {
     const { id } = req.params;
     const preferences = await req.json();
 
@@ -117,7 +117,7 @@ async function main() {
   });
 
   const port = 3003;
-  listen(port);
+  instanceBuild.listen(port);
 
   console.log(`\n📡 Server running on http://localhost:${port}`);
   console.log(`\n📝 Try these endpoints:`);
