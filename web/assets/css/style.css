@@ -41,6 +41,24 @@
     --nav-height: 64px;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
 html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
@@ -394,7 +412,7 @@ body {
    ================================ */
 
 .features {
-    padding: 120px 0;
+    padding: 110px 0;
     position: relative;
 }
 
@@ -459,6 +477,25 @@ body {
     font-size: 15px;
     line-height: 1.6;
     color: var(--text-secondary);
+}
+
+.features .bio {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    max-width: 750px;
+    margin: auto;
+    margin-top: 65px;
+}
+
+.features .bio a {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.features .bio a:hover {
+    color: #3b82f6;
+    cursor: pointer;
 }
 
 /* ================================
@@ -590,6 +627,25 @@ body {
 
 .adapter-link:hover {
     gap: 10px;
+}
+
+.adapter-showcase .bio {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    max-width: 850px;
+    margin: auto;
+    margin-top: 65px;
+}
+
+.adapter-showcase .bio a {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.adapter-showcase .bio a:hover {
+    color: #3b82f6;
+    cursor: pointer;
 }
 
 /* ================================
@@ -801,6 +857,11 @@ body {
         font-size: 28px;
     }
 
+    .stat-number svg {
+        fill: #50b862;
+        stroke: #50b862;
+    }
+
     .section-header h2 {
         font-size: 36px;
     }
@@ -823,4 +884,37 @@ body {
         gap: 16px;
         text-align: center;
     }
+}
+
+.icon-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 150%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #55555573;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.icon-tooltip:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.icon-tooltip:focus-within .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

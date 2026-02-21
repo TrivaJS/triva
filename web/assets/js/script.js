@@ -2,32 +2,49 @@
  * Triva Landing Page - Interactive Features
  */
 
+// SVG Icons
+lucide.createIcons();
+
+document.querySelectorAll('svg.lucide').forEach(svg => {
+  const tooltip = svg.dataset.tooltip;
+  if (!tooltip) return;
+
+  const titleEl = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'title'
+  );
+  titleEl.textContent = tooltip;
+
+  svg.querySelector('title')?.remove();
+  svg.prepend(titleEl);
+});
+
 (function() {
     'use strict';
 
     // ===================================
     // Navigation Scroll Effect
     // ===================================
-    
+
     const nav = document.getElementById('nav');
     let lastScroll = 0;
 
     window.addEventListener('scroll', () => {
         const currentScroll = window.pageYOffset;
-        
+
         if (currentScroll > 50) {
             nav.classList.add('scrolled');
         } else {
             nav.classList.remove('scrolled');
         }
-        
+
         lastScroll = currentScroll;
     });
 
     // ===================================
     // Mobile Menu Toggle
     // ===================================
-    
+
     const mobileMenu = document.getElementById('mobileMenu');
     const navLinks = document.getElementById('navLinks');
 
@@ -41,13 +58,13 @@
     // ===================================
     // Database Adapter Switcher
     // ===================================
-    
+
     const adapterData = {
         redis: {
             name: 'Redis',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'redis'</span>,
     database: {
@@ -66,7 +83,7 @@
             name: 'MongoDB',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'mongodb'</span>,
     database: {
@@ -84,7 +101,7 @@
             name: 'PostgreSQL',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'postgresql'</span>,
     database: {
@@ -103,7 +120,7 @@
             name: 'MySQL',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'mysql'</span>,
     database: {
@@ -122,7 +139,7 @@
             name: 'SQLite',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'sqlite'</span>,
     database: {
@@ -140,7 +157,7 @@
             name: 'Better SQLite3',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'better-sqlite3'</span>,
     database: {
@@ -158,7 +175,7 @@
             name: 'Supabase',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'supabase'</span>,
     database: {
@@ -176,7 +193,7 @@
             name: 'Embedded',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'embedded'</span>,
     database: {
@@ -194,7 +211,7 @@
             name: 'Memory',
             code: `<span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'memory'</span>
   }
@@ -232,7 +249,7 @@
                 // Update content
                 adapterCode.innerHTML = data.code;
                 adapterName.textContent = data.name;
-                
+
                 adapterFeatures.innerHTML = data.features.map(feature => `
                     <li>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -260,7 +277,7 @@
     // ===================================
     // Intersection Observer for Animations
     // ===================================
-    
+
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -283,19 +300,19 @@
     // ===================================
     // Smooth Scroll for Anchor Links
     // ===================================
-    
+
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
             if (href === '#') return;
-            
+
             e.preventDefault();
             const target = document.querySelector(href);
-            
+
             if (target) {
                 const navHeight = document.querySelector('.nav').offsetHeight;
                 const targetPosition = target.offsetTop - navHeight - 20;
-                
+
                 window.scrollTo({
                     top: targetPosition,
                     behavior: 'smooth'
@@ -307,7 +324,7 @@
     // ===================================
     // Keyboard Navigation for Adapters
     // ===================================
-    
+
     let currentAdapterIndex = 0;
     const adapterTabsArray = Array.from(adapterTabs);
 
@@ -315,18 +332,18 @@
         // Only if user is focused on adapter section
         const adapterSection = document.querySelector('.adapters');
         if (!adapterSection) return;
-        
+
         const rect = adapterSection.getBoundingClientRect();
         const isInView = rect.top < window.innerHeight && rect.bottom >= 0;
-        
+
         if (!isInView) return;
 
         if (e.key === 'ArrowRight') {
             e.preventDefault();
             currentAdapterIndex = (currentAdapterIndex + 1) % adapterTabsArray.length;
             adapterTabsArray[currentAdapterIndex].click();
-            adapterTabsArray[currentAdapterIndex].scrollIntoView({ 
-                behavior: 'smooth', 
+            adapterTabsArray[currentAdapterIndex].scrollIntoView({
+                behavior: 'smooth',
                 block: 'nearest',
                 inline: 'center'
             });
@@ -334,8 +351,8 @@
             e.preventDefault();
             currentAdapterIndex = (currentAdapterIndex - 1 + adapterTabsArray.length) % adapterTabsArray.length;
             adapterTabsArray[currentAdapterIndex].click();
-            adapterTabsArray[currentAdapterIndex].scrollIntoView({ 
-                behavior: 'smooth', 
+            adapterTabsArray[currentAdapterIndex].scrollIntoView({
+                behavior: 'smooth',
                 block: 'nearest',
                 inline: 'center'
             });
@@ -345,7 +362,7 @@
     // ===================================
     // Auto-rotate Adapters (Optional)
     // ===================================
-    
+
     let autoRotateInterval;
     const AUTO_ROTATE_DELAY = 5000; // 5 seconds
     let isAutoRotating = false;
@@ -353,7 +370,7 @@
     function startAutoRotate() {
         if (isAutoRotating) return;
         isAutoRotating = true;
-        
+
         autoRotateInterval = setInterval(() => {
             currentAdapterIndex = (currentAdapterIndex + 1) % adapterTabsArray.length;
             adapterTabsArray[currentAdapterIndex].click();
@@ -390,9 +407,9 @@
     // ===================================
     // Performance: Reduce Motion
     // ===================================
-    
+
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    
+
     if (prefersReducedMotion.matches) {
         // Disable animations for users who prefer reduced motion
         document.querySelectorAll('[data-animate]').forEach(el => {
@@ -405,7 +422,7 @@
     // ===================================
     // Console Easter Egg
     // ===================================
-    
+
     console.log('%c🚀 Triva', 'font-size: 24px; font-weight: bold; color: #3b82f6;');
     console.log('%cThe Modern Node.js Framework', 'font-size: 14px; color: #a1a1aa;');
     console.log('%c\nInterested in contributing?\nVisit: https://github.com/trivajs/triva', 'font-size: 12px; color: #71717a;');

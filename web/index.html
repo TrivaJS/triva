@@ -10,9 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Styles -->
     <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="icon" type="image/png" href="./assets/favicon.png">
 </head>
 <body>
     <!-- Navigation -->
@@ -80,8 +82,19 @@
 
                 <div class="hero-stats">
                     <div class="stat">
-                        <div class="stat-number">0</div>
-                        <div class="stat-label">Dependencies</div>
+                        <div class="stat-number">1.0.0
+                            <span class="icon-tooltip">
+                            <i
+                                data-lucide="badge-check"
+                                tabindex="0"
+                                stroke="#52b788">
+                            </i>
+                            <span class="tooltip">
+                                This release has passed all stability tests in production environments
+                            </span>
+                            </span>
+                        </div>
+                        <div class="stat-label">Latest Release</div>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
@@ -90,8 +103,8 @@
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat">
-                        <div class="stat-number">50k+</div>
-                        <div class="stat-label">Req/sec</div>
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Dependencies</div>
                     </div>
                 </div>
             </div>
@@ -105,10 +118,10 @@
                         <span></span>
                     </div>
                     <div class="code-content">
-<pre><code><span class="token-import">import</span> { build, get, listen } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
+<pre><code><span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
 <span class="token-comment">// Zero configuration needed</span>
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'redis'</span>,
     database: { host: <span class="token-string">'localhost'</span> }
@@ -116,12 +129,12 @@
 });
 
 <span class="token-comment">// Define your routes</span>
-<span class="token-function">get</span>(<span class="token-string">'/'</span>, (req, res) => {
+<span class="token-function">app</span>.<span class="token-keyword">get</span>(<span class="token-string">'/'</span>, (<span class="token-number">req</span>, <span class="token-number">res</span>) => {
   res.<span class="token-function">json</span>({ hello: <span class="token-string">'world'</span> });
 });
 
 <span class="token-comment">// Start your server</span>
-<span class="token-function">listen</span>(<span class="token-number">3000</span>);</code></pre>
+<span class="token-function">app</span>.<span class="token-keyword">listen</span>(<span class="token-number">3000</span>);</code></pre>
                     </div>
                 </div>
             </div>
@@ -205,6 +218,12 @@
                     <p>Intuitive API, excellent documentation, and helpful error messages that actually help.</p>
                 </div>
             </div>
+
+            <div class="bio">
+                Our team & our community are constantly shipping new features, prioritizing enterprise enhancing infrastructure.
+                <br>
+                If your orginization is seeking specific features for your enterprise operations, please submit a ticket via our <a href="https://github.com/trivajs/triva/issues">GitHub Issues</a>
+            </div>
         </div>
     </section>
 
@@ -286,7 +305,7 @@
                         <div class="code-content">
 <pre><code id="adapterCode"><span class="token-import">import</span> { build } <span class="token-import">from</span> <span class="token-string">'triva'</span>;
 
-<span class="token-keyword">await</span> <span class="token-function">build</span>({
+<span class="token-keyword">const <span class="token-function">app</span> = new</span> <span class="token-function">build</span>({
   cache: {
     type: <span class="token-string">'redis'</span>,
     database: {
@@ -327,6 +346,12 @@
                             </svg>
                         </a>
                     </div>
+                </div>
+
+                <div class="bio">
+                    New database adapters are released regularly as apart of content updates. Keep up with our available adapters via <a href="https://docs.trivajs.com" target="_blank">docs.trivajs.com</a>
+                    <br>
+                    Learn how to configure a database adapter into your operations with a short few steps <a href="https://docs.trivajs.com/database/adapters" target="_blank">here</a
                 </div>
             </div>
         </div>
