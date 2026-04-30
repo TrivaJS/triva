@@ -7,13 +7,13 @@ JWT authentication extension for Triva.
 
 ## Features
 
-✅ **Pure Node.js** - No dependencies, built with crypto module  
-✅ **Standards Compliant** - Follows JWT RFC 7519  
-✅ **Multiple Algorithms** - HS256, HS384, HS512  
-✅ **Route Protection** - Easy middleware for protected routes  
-✅ **Role-Based Access** - Built-in RBAC support  
-✅ **Permission System** - Granular permission checking  
-✅ **Token Refresh** - Automatic token refresh middleware  
+ **Pure Node.js** - No dependencies, built with crypto module  
+ **Standards Compliant** - Follows JWT RFC 7519  
+ **Multiple Algorithms** - HS256, HS384, HS512  
+ **Route Protection** - Easy middleware for protected routes  
+ **Role-Based Access** - Built-in RBAC support  
+ **Permission System** - Granular permission checking  
+ **Token Refresh** - Automatic token refresh middleware  
 
 ## Installation
 
@@ -24,13 +24,13 @@ npm install @triva/jwt
 ## Quick Start
 
 ```javascript
-import { build, post, get } from 'triva';
+import { build } from 'triva';
 import { sign, protect, requireRole } from '@triva/jwt';
 
-await build({ cache: { type: 'memory' } });
+const app = new build({ cache: { type: 'memory' } });
 
 // Login endpoint
-post('/auth/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
   const { email, password } = await req.json();
   
   // Verify credentials (your logic)
@@ -47,12 +47,12 @@ post('/auth/login', async (req, res) => {
 });
 
 // Protected route
-get('/api/profile', protect(), (req, res) => {
+app.get('/api/profile', protect(), (req, res) => {
   res.json({ user: req.user });
 });
 
 // Admin only route
-get('/api/admin', protect(), requireRole('admin'), (req, res) => {
+app.get('/api/admin', protect(), requireRole('admin'), (req, res) => {
   res.json({ admin: true });
 });
 ```
@@ -140,25 +140,25 @@ Middleware to protect routes with JWT authentication.
 
 **Example:**
 ```javascript
-import { get } from 'triva';
+import { build } from 'triva';
 import { protect } from '@triva/jwt';
 
 // Basic protection
-get('/protected', protect(), (req, res) => {
+app.get('/protected', protect(), (req, res) => {
   // req.user contains decoded token
   // req.token contains the original token
   res.json({ user: req.user });
 });
 
 // Custom token extraction
-get('/custom', protect({
+app.get('/custom', protect({
   getToken: (req) => req.query.token
 }), (req, res) => {
   res.json({ user: req.user });
 });
 
 // Optional authentication
-get('/optional', protect({ required: false }), (req, res) => {
+app.get('/optional', protect({ required: false }), (req, res) => {
   if (req.user) {
     res.json({ user: req.user });
   } else {
@@ -178,11 +178,11 @@ Middleware to require specific roles.
 
 **Example:**
 ```javascript
-import { get } from 'triva';
+import { build } from 'triva';
 import { protect, requireRole } from '@triva/jwt';
 
 // Single role
-get('/admin', 
+app.get('/admin', 
   protect(), 
   requireRole('admin'), 
   (req, res) => {
@@ -191,7 +191,7 @@ get('/admin',
 );
 
 // Multiple roles (OR logic)
-get('/moderator', 
+app.get('/moderator', 
   protect(), 
   requireRole('admin', 'moderator'), 
   (req, res) => {
@@ -211,11 +211,11 @@ Middleware to require specific permissions.
 
 **Example:**
 ```javascript
-import { get } from 'triva';
+import { build } from 'triva';
 import { protect, requirePermission } from '@triva/jwt';
 
 // User must have 'posts:delete' permission
-get('/posts/:id/delete', 
+app.get('/posts/:id/delete', 
   protect(), 
   requirePermission('posts:delete'), 
   (req, res) => {
@@ -224,7 +224,7 @@ get('/posts/:id/delete',
 );
 
 // Multiple permissions (AND logic)
-get('/admin/settings', 
+app.get('/admin/settings', 
   protect(), 
   requirePermission('admin:read', 'admin:write'), 
   (req, res) => {
@@ -246,19 +246,19 @@ Middleware to automatically refresh tokens.
 
 **Example:**
 ```javascript
-import { get, use } from 'triva';
+import { build } from 'triva';
 import { protect, refreshToken } from '@triva/jwt';
 
 // Apply globally
-use(protect());
-use(refreshToken({
+app.use(protect());
+app.use(refreshToken({
   onRefresh: async (req, newToken) => {
     console.log('Token refreshed for user:', req.user.userId);
   }
 }));
 
 // New token sent in X-New-Token header
-get('/api/data', (req, res) => {
+app.get('/api/data', (req, res) => {
   res.json({ data: [] });
   // Response includes: X-New-Token: <new-jwt>
 });
@@ -269,14 +269,14 @@ get('/api/data', (req, res) => {
 ### Basic Authentication System
 
 ```javascript
-import { build, post, get, use } from 'triva';
+import { build } from 'triva';
 import { sign, protect } from '@triva/jwt';
 import bcrypt from 'bcrypt';
 
-await build({ cache: { type: 'memory' } });
+const app = new build({ cache: { type: 'memory' } });
 
 // Register
-post('/auth/register', async (req, res) => {
+app.post('/auth/register', async (req, res) => {
   const { email, password, name } = await req.json();
   
   // Hash password
@@ -296,7 +296,7 @@ post('/auth/register', async (req, res) => {
 });
 
 // Login
-post('/auth/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
   const { email, password } = await req.json();
   
   // Find user
@@ -322,7 +322,7 @@ post('/auth/login', async (req, res) => {
 });
 
 // Get current user
-get('/auth/me', protect(), async (req, res) => {
+app.get('/auth/me', protect(), async (req, res) => {
   const user = await db.users.findById(req.user.userId);
   res.json({ user });
 });
@@ -331,26 +331,26 @@ get('/auth/me', protect(), async (req, res) => {
 ### Role-Based Access Control
 
 ```javascript
-import { get, post, del } from 'triva';
+import { build } from 'triva';
 import { protect, requireRole } from '@triva/jwt';
 
 // Public route - no auth
-get('/posts', (req, res) => {
+app.get('/posts', (req, res) => {
   res.json({ posts: [] });
 });
 
 // User route - requires authentication
-get('/posts/:id', protect(), (req, res) => {
+app.get('/posts/:id', protect(), (req, res) => {
   res.json({ post: {} });
 });
 
 // Author route - requires 'author' or 'admin' role
-post('/posts', protect(), requireRole('author', 'admin'), (req, res) => {
+app.post('/posts', protect(), requireRole('author', 'admin'), (req, res) => {
   res.status(201).json({ post: {} });
 });
 
 // Admin route - requires 'admin' role
-del('/posts/:id', protect(), requireRole('admin'), (req, res) => {
+app.del('/posts/:id', protect(), requireRole('admin'), (req, res) => {
   res.status(204).send();
 });
 ```
@@ -358,7 +358,7 @@ del('/posts/:id', protect(), requireRole('admin'), (req, res) => {
 ### Permission-Based Access
 
 ```javascript
-import { get, post, put, del } from 'triva';
+import { build } from 'triva';
 import { protect, requirePermission } from '@triva/jwt';
 
 // Create token with permissions
@@ -368,7 +368,7 @@ const token = sign({
 }, secret);
 
 // Routes with permission checks
-get('/posts', 
+app.get('/posts', 
   protect(), 
   requirePermission('posts:read'), 
   (req, res) => {
@@ -376,7 +376,7 @@ get('/posts',
   }
 );
 
-post('/posts', 
+app.post('/posts', 
   protect(), 
   requirePermission('posts:create'), 
   (req, res) => {
@@ -384,7 +384,7 @@ post('/posts',
   }
 );
 
-put('/posts/:id', 
+app.put('/posts/:id', 
   protect(), 
   requirePermission('posts:update'), 
   (req, res) => {
@@ -392,7 +392,7 @@ put('/posts/:id',
   }
 );
 
-del('/posts/:id', 
+app.del('/posts/:id', 
   protect(), 
   requirePermission('posts:delete'),  // User doesn't have this
   (req, res) => {
@@ -421,7 +421,7 @@ The extension provides detailed error codes:
 
 **Handle errors:**
 ```javascript
-get('/protected', protect(), (req, res) => {
+app.get('/protected', protect(), (req, res) => {
   res.json({ user: req.user });
 });
 
@@ -436,20 +436,20 @@ get('/protected', protect(), (req, res) => {
 ### 1. Use Strong Secrets
 
 ```javascript
-// ✅ Good - Random 256-bit secret
+//  Good - Random 256-bit secret
 const secret = crypto.randomBytes(32).toString('hex');
 
-// ❌ Bad - Weak secret
+//  Bad - Weak secret
 const secret = 'my-secret-key';
 ```
 
 ### 2. Set Appropriate Expiration
 
 ```javascript
-// ✅ Good - Short-lived tokens
+//  Good - Short-lived tokens
 sign(payload, secret, { expiresIn: '15m' });
 
-// ❌ Bad - Long-lived tokens
+//  Bad - Long-lived tokens
 sign(payload, secret, { expiresIn: '365d' });
 ```
 
@@ -460,20 +460,20 @@ Always use HTTPS in production to prevent token interception.
 ### 4. Store Tokens Securely
 
 ```javascript
-// ✅ Good - httpOnly cookies (server-side)
+//  Good - httpOnly cookies (server-side)
 res.cookie('token', token, { httpOnly: true, secure: true });
 
-// ⚠️ Acceptable - localStorage (client-side)
+//  Acceptable - localStorage (client-side)
 localStorage.setItem('token', token);
 
-// ❌ Bad - Plain cookies
+//  Bad - Plain cookies
 document.cookie = `token=${token}`;
 ```
 
 ### 5. Validate Payload
 
 ```javascript
-get('/protected', protect(), (req, res) => {
+app.get('/protected', protect(), (req, res) => {
   // Validate user still exists
   const user = await db.users.findById(req.user.userId);
   if (!user) {
@@ -508,4 +508,4 @@ assert.throws(() => verify(expiredToken, secret), /Token expired/);
 
 ## License
 
-MIT © Triva Team
+MIT  Triva Team

@@ -19,9 +19,9 @@ The snippets will automatically install to your IDE(s) on `npm install` and auto
 
 ## Supported IDEs
 
-✅ **VS Code** - Detects and installs to `User/snippets/`
-✅ **VS Code Insiders** - Detects and installs separately
-✅ **Atom** - Installs to `~/.atom/snippets.cson`
+ **VS Code** - Detects and installs to `User/snippets/`
+ **VS Code Insiders** - Detects and installs separately
+ **Atom** - Installs to `~/.atom/snippets.cson`
 
 ## Available Snippets
 
@@ -87,17 +87,17 @@ In VS Code or Atom, simply type the prefix and press `Tab` to expand the snippet
 3. Press `Tab` to move between placeholders
 
 ```javascript
-import { build, get, post, listen } from 'triva';
+import { build } from 'triva';
 
-await build({
+const app = new build({
   cache: { type: 'memory' }
 });
 
-get('/api', (req, res) => {
+app.get('/api', (req, res) => {
   res.json({ message: 'Hello' });
 });
 
-listen(3000);
+app.listen(3000);
 ```
 
 ### Example: Add CORS
@@ -108,7 +108,7 @@ listen(3000);
 ```javascript
 import { cors } from '@trivajs/cors';
 
-use(cors({
+app.use(cors({
   origin: 'https://example.com',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

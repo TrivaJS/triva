@@ -18,29 +18,29 @@ npm install @trivajs/cors
 ## Quick Start
 
 ```javascript
-import { build, get, use, listen } from 'triva';
+import { build } from 'triva';
 import { cors } from '@trivajs/cors';
 
-await build();
+const app = new build();
 
 // Enable CORS for all routes
-use(cors());
+app.use(cors());
 
-get('/api/data', (req, res) => {
+app.get('/api/data', (req, res) => {
   res.json({ message: 'CORS enabled!' });
 });
 
-listen(3000);
+app.listen(3000);
 ```
 
 ## Features
 
-✅ **Simple & Flexible** - Works seamlessly with Triva middleware system
-✅ **Zero Dependencies** - Lightweight, no external dependencies
-✅ **Full Configuration** - Complete control over CORS headers
-✅ **Pre-configured Modes** - Development, strict, multi-origin, dynamic
-✅ **Preflight Handling** - Automatic OPTIONS request handling
-✅ **Origin Validation** - String, Array, RegExp, or Function validation
+ **Simple & Flexible** - Works seamlessly with Triva middleware system
+ **Zero Dependencies** - Lightweight, no external dependencies
+ **Full Configuration** - Complete control over CORS headers
+ **Pre-configured Modes** - Development, strict, multi-origin, dynamic
+ **Preflight Handling** - Automatic OPTIONS request handling
+ **Origin Validation** - String, Array, RegExp, or Function validation
 
 ## Usage
 
@@ -50,25 +50,25 @@ listen(3000);
 import { cors } from '@trivajs/cors';
 
 // Allow all origins (default)
-use(cors());
+app.use(cors());
 
 // Specific origin
-use(cors({
+app.use(cors({
   origin: 'https://example.com'
 }));
 
 // Multiple origins
-use(cors({
+app.use(cors({
   origin: ['https://example.com', 'https://app.example.com']
 }));
 
 // RegExp pattern
-use(cors({
+app.use(cors({
   origin: /\.example\.com$/
 }));
 
 // Dynamic validation
-use(cors({
+app.use(cors({
   origin: (requestOrigin) => {
     return requestOrigin.endsWith('.trusted-domain.com');
   }
@@ -78,7 +78,7 @@ use(cors({
 ### Advanced Configuration
 
 ```javascript
-use(cors({
+app.use(cors({
   // Origin validation
   origin: 'https://example.com',
 
@@ -112,7 +112,7 @@ use(cors({
 ```javascript
 import { corsDevMode } from '@trivajs/cors';
 
-use(corsDevMode());
+app.use(corsDevMode());
 // Allows all origins, methods, headers
 ```
 
@@ -121,7 +121,7 @@ use(corsDevMode());
 ```javascript
 import { corsStrict } from '@trivajs/cors';
 
-use(corsStrict('https://app.example.com'));
+app.use(corsStrict('https://app.example.com'));
 // Credentials enabled, limited methods
 ```
 
@@ -130,7 +130,7 @@ use(corsStrict('https://app.example.com'));
 ```javascript
 import { corsMultiOrigin } from '@trivajs/cors';
 
-use(corsMultiOrigin([
+app.use(corsMultiOrigin([
   'https://app.example.com',
   'https://admin.example.com'
 ]));
@@ -141,7 +141,7 @@ use(corsMultiOrigin([
 ```javascript
 import { corsDynamic } from '@trivajs/cors';
 
-use(corsDynamic((origin) => {
+app.use(corsDynamic((origin) => {
   // Custom validation logic
   const allowedDomains = ['example.com', 'trusted.com'];
   return allowedDomains.some(domain => origin.endsWith(domain));
@@ -166,24 +166,24 @@ use(corsDynamic((origin) => {
 ### API with Authentication
 
 ```javascript
-import { build, get, post, use, listen } from 'triva';
+import { build } from 'triva';
 import { cors } from '@trivajs/cors';
 
-await build();
+const app = new build();
 
 // CORS with credentials for authentication
-use(cors({
+app.use(cors({
   origin: 'https://app.example.com',
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-get('/api/user', (req, res) => {
+app.get('/api/user', (req, res) => {
   // Cookies and auth headers allowed
   res.json({ user: 'authenticated' });
 });
 
-listen(3000);
+app.listen(3000);
 ```
 
 ### Multiple Environments
@@ -194,28 +194,30 @@ import { cors, corsDevMode, corsStrict } from '@trivajs/cors';
 const isDev = process.env.NODE_ENV === 'development';
 
 if (isDev) {
-  use(corsDevMode()); // Allow all in development
+  app.use(corsDevMode()); // Allow all in development
 } else {
-  use(corsStrict('https://production.example.com')); // Strict in production
+  app.use(corsStrict('https://production.example.com')); // Strict in production
 }
 ```
 
 ### Route-Specific CORS
 
 ```javascript
-import { get, use } from 'triva';
+import { build } from 'triva';
 import { cors, corsDevMode } from '@trivajs/cors';
 
+const app = new build();
+
 // Public API - allow all
-get('/api/public/data', use(corsDevMode()), (req, res) => {
+app.get('/api/public/data', corsDevMode(), (req, res) => {
   res.json({ public: true });
 });
 
 // Private API - strict CORS
-get('/api/private/data', use(cors({
+app.get('/api/private/data', cors({
   origin: 'https://app.example.com',
   credentials: true
-})), (req, res) => {
+}), (req, res) => {
   res.json({ private: true });
 });
 ```
@@ -226,7 +228,7 @@ get('/api/private/data', use(cors({
 import { corsDynamic } from '@trivajs/cors';
 
 // Check origin against database
-use(corsDynamic(async (origin) => {
+app.use(corsDynamic(async (origin) => {
   const allowedOrigins = await db.getAllowedOrigins();
   return allowedOrigins.includes(origin);
 }));
@@ -235,7 +237,7 @@ use(corsDynamic(async (origin) => {
 ### Subdomain Wildcard
 
 ```javascript
-use(cors({
+app.use(cors({
   origin: /^https:\/\/.*\.example\.com$/
 }));
 // Allows: https://app.example.com, https://admin.example.com
@@ -251,14 +253,14 @@ use(cors({
 
 ## Security Best Practices
 
-❌ **Don't** use `origin: '*'` with `credentials: true`
-✅ **Do** specify exact origins in production
+ **Don't** use `origin: '*'` with `credentials: true`
+ **Do** specify exact origins in production
 
-❌ **Don't** expose sensitive headers unnecessarily
-✅ **Do** limit `exposedHeaders` to what's needed
+ **Don't** expose sensitive headers unnecessarily
+ **Do** limit `exposedHeaders` to what's needed
 
-❌ **Don't** allow all methods by default
-✅ **Do** specify only required methods
+ **Don't** allow all methods by default
+ **Do** specify only required methods
 
 ## Troubleshooting
 
@@ -277,7 +279,7 @@ origin: 'https://example.com'
 
 Ensure both are set:
 ```javascript
-use(cors({
+app.use(cors({
   origin: 'https://example.com', // NOT '*'
   credentials: true
 }));
@@ -294,7 +296,7 @@ fetch('https://api.example.com', {
 
 Add your headers to `allowedHeaders`:
 ```javascript
-use(cors({
+app.use(cors({
   allowedHeaders: ['Content-Type', 'X-Custom-Header']
 }));
 ```

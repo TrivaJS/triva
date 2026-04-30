@@ -14,22 +14,21 @@ import { execSync } from 'child_process';
 const PORT = 3443;
 const REQUESTS = 10000;
 const CONCURRENCY = 100;
+const keyPath = new URL('../examples/certs/localhost-key.pem', import.meta.url);
+const certPath = new URL('../examples/certs/localhost-cert.pem', import.meta.url);
 
 // Generate test certificates if they don't exist
 function ensureCertificates() {
-  if (!fs.existsSync('./key.pem') || !fs.existsSync('./cert.pem')) {
-    console.log('📝 Generating test certificates...');
+  if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+    console.log('ðŸ“ Generating test certificates...');
     try {
       execSync('npm run generate-certs', { stdio: 'inherit' });
     } catch (error) {
-      console.error('❌ Failed to generate certificates');
+      console.error('âŒ Failed to generate certificates');
       process.exit(1);
     }
   }
 }
-
-
-
 
 async function runBenchmark() {
   console.log('========================================');
@@ -42,8 +41,8 @@ async function runBenchmark() {
   const instanceBuild = new build({
     protocol: 'https',
     ssl: {
-      key: fs.readFileSync('./key.pem'),
-      cert: fs.readFileSync('./cert.pem')
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath)
     },
     cache: {
       type: 'memory'
@@ -69,7 +68,7 @@ async function runBenchmark() {
   // Start server
   const server = await new Promise((resolve) => {
     const srv = instanceBuild.listen(PORT, () => {
-      console.log(`✅ HTTPS server started on port ${PORT}\n`);
+      console.log(`âœ… HTTPS server started on port ${PORT}\n`);
       resolve(srv);
     });
   });
@@ -80,7 +79,7 @@ async function runBenchmark() {
   const results = [];
 
   // Benchmark 1: Simple JSON response
-  console.log('🔒 Benchmark 1: Simple HTTPS JSON Response');
+  console.log('ðŸ”’ Benchmark 1: Simple HTTPS JSON Response');
   console.log(`   Making ${REQUESTS} requests with ${CONCURRENCY} concurrent connections...\n`);
 
   const jsonStart = Date.now();
@@ -89,7 +88,7 @@ async function runBenchmark() {
   for (let i = 0; i < REQUESTS; i++) {
     const promise = new Promise((resolve, reject) => {
       const req = https.get({
-        ca: fs.readFileSync('./cert.pem'), // Trust the local self-signed cert
+        ca: fs.readFileSync(certPath), // Trust the local self-signed cert
         port: PORT,
         path: '/',
       }, (res) => {
@@ -114,8 +113,8 @@ async function runBenchmark() {
   const jsonDuration = Date.now() - jsonStart;
   const jsonRps = Math.round(REQUESTS / (jsonDuration / 1000));
 
-  console.log(`   ✅ Completed in ${jsonDuration}ms`);
-  console.log(`   📊 ${jsonRps} requests/second\n`);
+  console.log(`   âœ… Completed in ${jsonDuration}ms`);
+  console.log(`   ðŸ“Š ${jsonRps} requests/second\n`);
 
   results.push({
     name: 'Simple HTTPS JSON',
@@ -126,7 +125,7 @@ async function runBenchmark() {
   });
 
   // Benchmark 2: Text response
-  console.log('🔒 Benchmark 2: HTTPS Text Response');
+  console.log('ðŸ”’ Benchmark 2: HTTPS Text Response');
   console.log(`   Making ${REQUESTS} requests with ${CONCURRENCY} concurrent connections...\n`);
 
   const textStart = Date.now();
@@ -138,7 +137,7 @@ async function runBenchmark() {
         hostname: 'localhost',
         port: PORT,
         path: '/text',
-        ca: fs.readFileSync('./cert.pem')
+        ca: fs.readFileSync(certPath)
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
@@ -160,8 +159,8 @@ async function runBenchmark() {
   const textDuration = Date.now() - textStart;
   const textRps = Math.round(REQUESTS / (textDuration / 1000));
 
-  console.log(`   ✅ Completed in ${textDuration}ms`);
-  console.log(`   📊 ${textRps} requests/second\n`);
+  console.log(`   âœ… Completed in ${textDuration}ms`);
+  console.log(`   ðŸ“Š ${textRps} requests/second\n`);
 
   results.push({
     name: 'HTTPS Text',
@@ -172,7 +171,7 @@ async function runBenchmark() {
   });
 
   // Benchmark 3: Large JSON response
-  console.log('🔒 Benchmark 3: Large HTTPS JSON Response');
+  console.log('ðŸ”’ Benchmark 3: Large HTTPS JSON Response');
   console.log(`   Making ${Math.round(REQUESTS / 10)} requests with ${CONCURRENCY} concurrent connections...\n`);
 
   const largeRequests = Math.round(REQUESTS / 10);
@@ -185,7 +184,7 @@ async function runBenchmark() {
         hostname: 'localhost',
         port: PORT,
         path: '/large',
-        ca: fs.readFileSync('./cert.pem')
+        ca: fs.readFileSync(certPath)
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
@@ -207,8 +206,8 @@ async function runBenchmark() {
   const largeDuration = Date.now() - largeStart;
   const largeRps = Math.round(largeRequests / (largeDuration / 1000));
 
-  console.log(`   ✅ Completed in ${largeDuration}ms`);
-  console.log(`   📊 ${largeRps} requests/second\n`);
+  console.log(`   âœ… Completed in ${largeDuration}ms`);
+  console.log(`   ðŸ“Š ${largeRps} requests/second\n`);
 
   results.push({
     name: 'Large HTTPS JSON',
@@ -223,7 +222,7 @@ async function runBenchmark() {
 
   // Print summary
   console.log('========================================');
-  console.log('📈 Benchmark Summary');
+  console.log('ðŸ“ˆ Benchmark Summary');
   console.log('========================================\n');
 
   results.forEach(result => {
@@ -240,6 +239,6 @@ async function runBenchmark() {
 }
 
 runBenchmark().catch(error => {
-  console.error('❌ Benchmark failed:', error);
+  console.error('âŒ Benchmark failed:', error);
   process.exit(1);
 });
