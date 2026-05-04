@@ -23,7 +23,7 @@ export default function Nav() {
         <div className={`nav-links${menuOpen ? ' open' : ''}`}>
           <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
           <a href="#adapters" onClick={() => setMenuOpen(false)}>Adapters</a>
-          <a href="https://docs.trivajs.com/getting-started" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://docs.trivajs.com" target="_blank" rel="noreferrer">Docs</a>
           <a href="/showcase">Showcase</a>
           <a href="https://github.com/trivajs/triva" className="github-link" target="_blank" rel="noreferrer">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
