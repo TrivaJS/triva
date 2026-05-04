@@ -13,16 +13,15 @@ This directory stores project change history that is better kept in versioned fi
 
 ## Current Sources of Truth
 
-- Public changelog page: `docs/changes.md`
-- Public roadmap page: `docs/roadmap.md`
 - Historical release note snapshots: `changes/versions/`
+- This README: release-note workflow and authoring guidance
 
 ## Adding a New Release Note
 
 1. Create a new file in `changes/versions/` named after the release, for example `v1.1.0.md`.
 2. Summarize notable improvements, fixes, and migration notes.
-3. Update `docs/changes.md` with the new release entry.
-4. Update `docs/roadmap.md` if the release changes forward-looking plans.
+3. Update this index if the release changes how notes are organized or maintained.
+4. Refresh any public docs pages that reference newly supported features, adapters, or examples.
 
 ## Writing Guidelines
 
