@@ -1,0 +1,220 @@
+name: Automatic Repository Backup
+
+on:
+  push:
+    branches:
+      - '**'  # All branches
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - '**'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  backup-on-push:
+    name: Backup on Push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history
+      
+      - name: Get commit information
+        id: commit-info
+        run: |
+          COMMIT_SHA="${{ github.sha }}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          COMMIT_DATE=$(git log -1 --pretty=%ci)
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          
+          echo "sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "date=$COMMIT_DATE" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+      
+      - name: Create backup zip
+        run: |
+          # Create backup directory structure
+          mkdir -p backups/push
+          
+          # Create zip of entire repository (excluding .git and backups)
+          zip -r "backups/push/${{ steps.commit-info.outputs.sha }}.zip" . \
+            -x ".git/*" \
+            -x "backups/*" \
+            -x "node_modules/*" \
+            -x ".github/*"
+          
+          # Create metadata file
+          cat > "backups/push/${{ steps.commit-info.outputs.sha }}.json" << EOF
+          {
+            "commit_sha": "${{ steps.commit-info.outputs.sha }}",
+            "short_sha": "${{ steps.commit-info.outputs.short_sha }}",
+            "commit_message": "${{ steps.commit-info.outputs.message }}",
+            "commit_date": "${{ steps.commit-info.outputs.date }}",
+            "branch": "${{ steps.commit-info.outputs.branch }}",
+            "author": "${{ github.actor }}",
+            "backup_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "backup_type": "push",
+            "event": "${{ github.event_name }}"
+          }
+          EOF
+      
+      - name: Get backup size
+        id: backup-size
+        run: |
+          SIZE=$(ls -lh "backups/push/${{ steps.commit-info.outputs.sha }}.zip" | awk '{print $5}')
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+      
+      - name: Commit backup to repository
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Add backup files
+          git add backups/push/${{ steps.commit-info.outputs.sha }}.zip
+          git add backups/push/${{ steps.commit-info.outputs.sha }}.json
+          
+          # Commit with informative message
+          git commit -m "🔄 Backup: ${{ steps.commit-info.outputs.short_sha }} (${{ steps.backup-size.outputs.size }})" \
+                     -m "Branch: ${{ steps.commit-info.outputs.branch }}" \
+                     -m "Commit: ${{ steps.commit-info.outputs.message }}" \
+                     -m "Date: ${{ steps.commit-info.outputs.date }}"
+      
+      - name: Push backup
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+      
+      - name: Log backup creation
+        run: |
+          echo "✅ Backup created successfully"
+          echo "   Commit: ${{ steps.commit-info.outputs.short_sha }}"
+          echo "   Size: ${{ steps.backup-size.outputs.size }}"
+          echo "   Location: backups/push/${{ steps.commit-info.outputs.sha }}.zip"
+  
+  backup-on-pr:
+    name: Backup on Pull Request
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      
+      - name: Get PR information
+        id: pr-info
+        run: |
+          COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BRANCH="${{ github.event.pull_request.head.ref }}"
+          PR_BASE="${{ github.event.pull_request.base.ref }}"
+          
+          echo "sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "branch=$PR_BRANCH" >> $GITHUB_OUTPUT
+          echo "base=$PR_BASE" >> $GITHUB_OUTPUT
+      
+      - name: Create backup zip
+        run: |
+          # Create backup directory structure
+          mkdir -p backups/pull_request
+          
+          # Create zip of entire repository
+          zip -r "backups/pull_request/${{ steps.pr-info.outputs.sha }}.zip" . \
+            -x ".git/*" \
+            -x "backups/*" \
+            -x "node_modules/*" \
+            -x ".github/*"
+          
+          # Create metadata file
+          cat > "backups/pull_request/${{ steps.pr-info.outputs.sha }}.json" << EOF
+          {
+            "commit_sha": "${{ steps.pr-info.outputs.sha }}",
+            "short_sha": "${{ steps.pr-info.outputs.short_sha }}",
+            "pr_number": ${{ steps.pr-info.outputs.number }},
+            "pr_title": "${{ steps.pr-info.outputs.title }}",
+            "pr_branch": "${{ steps.pr-info.outputs.branch }}",
+            "base_branch": "${{ steps.pr-info.outputs.base }}",
+            "author": "${{ github.actor }}",
+            "backup_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "backup_type": "pull_request",
+            "event": "${{ github.event_name }}"
+          }
+          EOF
+      
+      - name: Get backup size
+        id: backup-size
+        run: |
+          SIZE=$(ls -lh "backups/pull_request/${{ steps.pr-info.outputs.sha }}.zip" | awk '{print $5}')
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+      
+      - name: Checkout base branch
+        run: |
+          git fetch origin ${{ steps.pr-info.outputs.base }}:${{ steps.pr-info.outputs.base }}
+          git checkout ${{ steps.pr-info.outputs.base }}
+      
+      - name: Commit backup to base branch
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Add backup files
+          git add backups/pull_request/${{ steps.pr-info.outputs.sha }}.zip
+          git add backups/pull_request/${{ steps.pr-info.outputs.sha }}.json
+          
+          # Commit with informative message
+          git commit -m "🔄 PR Backup: #${{ steps.pr-info.outputs.number }} - ${{ steps.pr-info.outputs.short_sha }} (${{ steps.backup-size.outputs.size }})" \
+                     -m "PR: ${{ steps.pr-info.outputs.title }}" \
+                     -m "Branch: ${{ steps.pr-info.outputs.branch }} → ${{ steps.pr-info.outputs.base }}" \
+                     -m "Commit: ${{ steps.pr-info.outputs.sha }}"
+      
+      - name: Push backup
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.pr-info.outputs.base }}
+      
+      - name: Comment on PR with backup info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 💾 Backup Created
+            
+            A backup of this PR has been automatically created:
+            
+            - **Commit:** \`${{ steps.pr-info.outputs.short_sha }}\`
+            - **Size:** ${{ steps.backup-size.outputs.size }}
+            - **Location:** \`backups/pull_request/${{ steps.pr-info.outputs.sha }}.zip\`
+            
+            This backup can be used to restore the exact state of the code at this point.`;
+            
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.pr-info.outputs.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Log backup creation
+        run: |
+          echo "✅ PR Backup created successfully"
+          echo "   PR: #${{ steps.pr-info.outputs.number }}"
+          echo "   Commit: ${{ steps.pr-info.outputs.short_sha }}"
+          echo "   Size: ${{ steps.backup-size.outputs.size }}"
+          echo "   Location: backups/pull_request/${{ steps.pr-info.outputs.sha }}.zip"

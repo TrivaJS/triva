@@ -38,12 +38,12 @@ triva server status
 
 ## Features
 
-✅ **Logs Management** - View, filter, export request logs
-✅ **Error Tracking** - List, resolve, analyze errors
-✅ **Cache Control** - Get, set, delete cache entries
-✅ **Statistics** - View application metrics
-✅ **Server Management** - Start, stop, restart server
-✅ **Zero Dependencies** - Lightweight CLI tool
+ **Logs Management** - View, filter, export request logs
+ **Error Tracking** - List, resolve, analyze errors
+ **Cache Control** - Get, set, delete cache entries
+ **Statistics** - View application metrics
+ **Server Management** - Start, stop, restart server
+ **Zero Dependencies** - Lightweight CLI tool
 
 ## Commands
 

@@ -1,6 +1,6 @@
 
 import { performance } from 'perf_hooks';
-import { build, get, post, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 import http from 'http';
 
 class BenchmarkRunner {
@@ -55,11 +55,11 @@ class BenchmarkRunner {
   }
 
   printSummary() {
-      console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
-      this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-      console.log(`\n${'='.repeat(70)}\n`);
+        console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+        this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
+        console.log(`\n${'='.repeat(70)}\n`);
+      }
     }
-  }
 
 /**
  * HTTP Server Performance Benchmark
@@ -74,17 +74,17 @@ async function benchmarkHTTP() {
   const port = 9998;
   let server;
 
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory' },
     throttle: { limit: 100000, window_ms: 60000 }
   });
 
   // Setup routes
-  get('/bench/simple', (req, res) => {
+  instanceBuild.get('/bench/simple', (req, res) => {
     res.json({ ok: true });
   });
 
-  get('/bench/data', (req, res) => {
+  instanceBuild.get('/bench/data', (req, res) => {
     res.json({
       id: 123,
       name: 'Test',
@@ -93,12 +93,12 @@ async function benchmarkHTTP() {
     });
   });
 
-  post('/bench/echo', async (req, res) => {
+  instanceBuild.post('/bench/echo', async (req, res) => {
     const body = await req.json();
     res.json(body);
   });
 
-  server = listen(port);
+  server = instanceBuild.listen(port);
 
   // Wait for server to be ready
   await new Promise(resolve => setTimeout(resolve, 200));

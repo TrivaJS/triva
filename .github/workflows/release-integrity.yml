@@ -1,0 +1,449 @@
+name: Release Integrity Verification
+
+# Runs on every push to every branch (preview) and on PRs to main (integrity).
+# Results go to the Actions job summary.
+# Security/failure details are also posted as PR comments for immediate visibility.
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  deployments: write
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Unit Tests
+  # ────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        id: unit-tests
+        run: node scripts/test.js unit 2>&1 | tee unit-tests.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🧪 Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat unit-tests.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload unit test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-logs-${{ github.sha }}
+          path: unit-tests.log
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Integration Tests
+  # ────────────────────────────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate certificates for HTTPS tests
+        run: npm run generate-certs || true
+
+      - name: Run integration tests
+        id: integration-tests
+        run: node scripts/test.js integration 2>&1 | tee integration-tests.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🔗 Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat integration-tests.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload integration test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-logs-${{ github.sha }}
+          path: integration-tests.log
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Database Adapter Tests
+  # ────────────────────────────────────────────────────────────────────────────
+  db-tests:
+    name: Database Adapter Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [ embedded, sqlite, better-sqlite3, redis, mongodb ]
+
+    services:
+      redis:
+        image: redis:7
+        ports: [ '6379:6379' ]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mongodb:
+        image: mongo:7
+        ports: [ '27017:27017' ]
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install adapter-specific package
+        run: |
+          case "${{ matrix.adapter }}" in
+            sqlite)       npm install sqlite3 ;;
+            better-sqlite3) npm install better-sqlite3 ;;
+            redis)        npm install redis ;;
+            mongodb)      npm install mongodb ;;
+          esac
+
+      - name: Run adapter tests
+        id: adapter-tests
+        env:
+          REDIS_HOST:   localhost
+          REDIS_PORT:   6379
+          MONGODB_URI:  mongodb://root:password@localhost:27017/triva_test?authSource=admin
+        run: node test/adapters/${{ matrix.adapter }}.test.js 2>&1 | tee adapter-${{ matrix.adapter }}.log
+
+      - name: Write to summary
+        if: always()
+        run: |
+          echo "## 🗄️ Adapter: ${{ matrix.adapter }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat adapter-${{ matrix.adapter }}.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload adapter test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adapter-test-logs-${{ matrix.adapter }}-${{ github.sha }}
+          path: adapter-${{ matrix.adapter }}.log
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Preview Deployment — runs on every push
+  # ────────────────────────────────────────────────────────────────────────────
+  preview-deployment:
+    name: Preview Deployment
+    runs-on: ubuntu-latest
+    needs: [ unit-tests, integration-tests ]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Download test logs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-logs-${{ github.sha }}'
+          merge-multiple: true
+        continue-on-error: true
+
+      # Pack the package (npm pack produces the same tarball that goes to npm)
+      - name: Pack package
+        id: pack
+        run: |
+          npm pack --json > pack-info.json
+          TARBALL=$(jq -r '.[0].filename' pack-info.json)
+          echo "tarball=$TARBALL" >> $GITHUB_OUTPUT
+          echo "tarball_name=$(basename $TARBALL)" >> $GITHUB_OUTPUT
+
+      # Build a human-readable deployment notes file
+      - name: Generate deployment notes
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          DEPLOY_NAME="preview-${SHORT_SHA}"
+
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PKG_NAME=$(node -p "require('./package.json').name")
+
+          {
+            echo "# Preview Deployment — ${DEPLOY_NAME}"
+            echo ""
+            echo "**Package:** \`${PKG_NAME}@${PKG_VERSION}\`"
+            echo "**Commit:** \`${GITHUB_SHA}\`"
+            echo "**Branch:** \`${GITHUB_REF_NAME}\`"
+            echo "**Built:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Test Results"
+            echo ""
+
+            # Unit tests
+            if [ -f unit-tests.log ]; then
+              UNIT_PASS=$(grep -c "✅" unit-tests.log 2>/dev/null || echo 0)
+              UNIT_FAIL=$(grep -c "❌" unit-tests.log 2>/dev/null || echo 0)
+              STATUS="✅ PASSED"
+              [ "$UNIT_FAIL" -gt 0 ] && STATUS="❌ FAILED ($UNIT_FAIL failures)"
+              echo "### Unit Tests — ${STATUS}"
+              echo ""
+              if [ "$UNIT_FAIL" -gt 0 ]; then
+                echo "**Failures:**"
+                echo '```'
+                grep "❌" unit-tests.log || true
+                echo '```'
+              else
+                echo "All ${UNIT_PASS} assertions passed."
+              fi
+              echo ""
+            else
+              echo "### Unit Tests — ⚠️ Log not available"
+              echo ""
+            fi
+
+            # Integration tests
+            if [ -f integration-tests.log ]; then
+              INT_FAIL=$(grep -c "❌" integration-tests.log 2>/dev/null || echo 0)
+              STATUS="✅ PASSED"
+              [ "$INT_FAIL" -gt 0 ] && STATUS="❌ FAILED ($INT_FAIL failures)"
+              echo "### Integration Tests — ${STATUS}"
+              echo ""
+              if [ "$INT_FAIL" -gt 0 ]; then
+                echo "**Failures:**"
+                echo '```'
+                grep "❌" integration-tests.log || true
+                echo '```'
+              else
+                echo "All integration suites passed."
+              fi
+              echo ""
+            else
+              echo "### Integration Tests — ⚠️ Log not available"
+              echo ""
+            fi
+
+            echo "---"
+            echo ""
+            echo "## How to Install"
+            echo ""
+            echo '```bash'
+            echo "npm install ./${{ steps.pack.outputs.tarball_name }}"
+            echo '```'
+            echo ""
+            echo "## Package Contents"
+            echo ""
+            echo '```'
+            tar -tzf "${{ steps.pack.outputs.tarball }}" | head -60 || true
+            echo '```'
+
+          } > DEPLOYMENT-NOTES.md
+
+          echo "Deploy name: ${DEPLOY_NAME}"
+          cat DEPLOYMENT-NOTES.md
+
+      # Create a GitHub deployment
+      - name: Create GitHub deployment
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha       = context.sha;
+            const shortSha  = sha.substring(0, 7);
+            const deployName = `preview-${shortSha}`;
+
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner:                  context.repo.owner,
+              repo:                   context.repo.repo,
+              ref:                    sha,
+              environment:            deployName,
+              description:            `Preview build for commit ${shortSha}`,
+              auto_merge:             false,
+              required_contexts:      [],
+              transient_environment:  true,
+              production_environment: false
+            });
+
+            core.setOutput('deployment_id', deployment.id);
+            core.setOutput('deploy_name',   deployName);
+            return deployment.id;
+
+      - name: Upload deployment package + notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-${{ github.sha }}
+          path: |
+            ${{ steps.pack.outputs.tarball }}
+            DEPLOYMENT-NOTES.md
+          retention-days: 30
+
+      - name: Write preview summary
+        if: always()
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "## 📦 Preview Deployment — preview-${SHORT_SHA}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat DEPLOYMENT-NOTES.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Mark deployment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner:          context.repo.owner,
+              repo:           context.repo.repo,
+              deployment_id:  ${{ steps.deployment.outputs.deployment_id }},
+              state:          'success',
+              description:    'Preview package built and tests passed',
+              log_url:        `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Mark deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner:         context.repo.owner,
+              repo:          context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+              state:         'failure',
+              description:   'Tests failed — see deployment notes for details',
+              log_url:       `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Overall status — PR comment summarising everything (failures highlighted)
+  # ────────────────────────────────────────────────────────────────────────────
+  overall-status:
+    name: Overall Status
+    runs-on: ubuntu-latest
+    needs: [ unit-tests, integration-tests, db-tests, preview-deployment ]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Download all test logs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-logs-${{ github.sha }}'
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Build status comment
+        id: build-comment
+        run: |
+          UNIT_RESULT="${{ needs.unit-tests.result }}"
+          INT_RESULT="${{ needs.integration-tests.result }}"
+          DB_RESULT="${{ needs.db-tests.result }}"
+          DEPLOY_RESULT="${{ needs.preview-deployment.result }}"
+
+          icon() { [ "$1" = "success" ] && echo "✅" || [ "$1" = "skipped" ] && echo "⏭️" || echo "❌"; }
+
+          {
+            echo 'comment<<EOF'
+            echo '## 🔍 Release Integrity Verification'
+            echo ''
+            echo '| Test Suite | Status |'
+            echo '|------------|--------|'
+            echo "| Unit Tests       | $(icon $UNIT_RESULT) ${UNIT_RESULT^} |"
+            echo "| Integration Tests | $(icon $INT_RESULT) ${INT_RESULT^} |"
+            echo "| Database Adapters | $(icon $DB_RESULT) ${DB_RESULT^} |"
+            echo "| Preview Deploy   | $(icon $DEPLOY_RESULT) ${DEPLOY_RESULT^} |"
+            echo ''
+
+            # Highlight any failures
+            FAILURES=""
+            if [ -f unit-tests.log ] && grep -q "❌" unit-tests.log; then
+              FAILURES="$FAILURES\n### ❌ Unit Test Failures\n\`\`\`"
+              FAILURES="$FAILURES\n$(grep '❌' unit-tests.log)"
+              FAILURES="$FAILURES\n\`\`\`"
+            fi
+            if [ -f integration-tests.log ] && grep -q "❌" integration-tests.log; then
+              FAILURES="$FAILURES\n### ❌ Integration Test Failures\n\`\`\`"
+              FAILURES="$FAILURES\n$(grep '❌' integration-tests.log)"
+              FAILURES="$FAILURES\n\`\`\`"
+            fi
+
+            if [ -n "$FAILURES" ]; then
+              echo '## ⚠️ Failures Detected'
+              echo ''
+              printf "%b\n" "$FAILURES"
+              echo ''
+            fi
+
+            echo "---"
+            echo "*Commit: \`${GITHUB_SHA:0:7}\` — [View full run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
+      - name: Find existing status comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Release Integrity Verification'
+
+      - name: Create or update status comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id:   ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode:    replace
+          body:         ${{ steps.build-comment.outputs.comment }}

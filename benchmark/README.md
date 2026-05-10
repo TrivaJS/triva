@@ -25,7 +25,7 @@ node benchmark/bench-http.js
 
 ## Benchmark Suites
 
-### 🗄️ Cache (`bench-cache.js`)
+###  Cache (`bench-cache.js`)
 Tests cache operation performance across all adapters:
 - Set operations (strings, objects, large data)
 - Get operations (hits, misses)
@@ -39,7 +39,7 @@ Tests cache operation performance across all adapters:
 - P50/P95/P99 percentiles
 - Memory usage
 
-### 🛣️ Routing (`bench-routing.js`)
+###  Routing (`bench-routing.js`)
 Tests HTTP routing and request handling:
 - Route matching (10, 100 routes)
 - Parameter extraction
@@ -51,7 +51,7 @@ Tests HTTP routing and request handling:
 - Parameter extraction speed
 - Throughput (ops/sec)
 
-### 🔌 Middleware (`bench-middleware.js`)
+###  Middleware (`bench-middleware.js`)
 Tests middleware processing speed:
 - Single middleware execution
 - Middleware chains (3, 10 middlewares)
@@ -64,7 +64,7 @@ Tests middleware processing speed:
 - Chain processing overhead
 - Async performance impact
 
-### 🛡️ Throttle (`bench-throttle.js`)
+###  Throttle (`bench-throttle.js`)
 Tests rate limiting performance:
 - Rate limit checks
 - Sliding window calculations
@@ -78,7 +78,7 @@ Tests rate limiting performance:
 - Policy evaluation overhead
 - Fingerprint generation time
 
-### 📊 Logging (`bench-logging.js`)
+###  Logging (`bench-logging.js`)
 Tests request logging performance:
 - Log entry creation (simple, detailed)
 - Timestamp formatting
@@ -92,7 +92,7 @@ Tests request logging performance:
 - Serialization overhead
 - Filter performance
 
-### 🌐 HTTP (`bench-http.js`)
+###  HTTP (`bench-http.js`)
 Tests end-to-end HTTP performance:
 - Simple GET requests
 - JSON responses
@@ -109,7 +109,7 @@ Tests end-to-end HTTP performance:
 ### Output Format
 
 ```
-📊 Cache Set (small string)
+ Cache Set (small string)
    Iterations: 10,000
    Avg: 0.0234ms | P50: 0.0210ms | P95: 0.0456ms | P99: 0.0789ms
    Min: 0.0123ms | Max: 1.2345ms

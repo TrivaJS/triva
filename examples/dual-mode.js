@@ -3,7 +3,7 @@
  * Run both HTTP and HTTPS servers simultaneously
  */
 
-import { build, get } from '../lib/index.js';
+import { build } from '../lib/index.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function startDualServers() {
   // HTTP Server
-  const httpServer = await build({
+  const httpServer = new build({
     env: 'production',
     protocol: 'http',
     cache: { type: 'memory' },
@@ -31,7 +31,7 @@ async function startDualServers() {
   const http = httpServer.listen(3000);
 
   // HTTPS Server
-  const httpsServer = await build({
+  const httpsServer = new build({
     env: 'production',
     protocol: 'https',
     ssl: {
@@ -47,7 +47,7 @@ async function startDualServers() {
   });
 
   httpsServer.get('/api/secure', (req, res) => {
-    res.json({ 
+    res.json({
       message: 'This is a secure endpoint',
       protocol: 'https'
     });

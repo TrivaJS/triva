@@ -3,7 +3,7 @@
  * Demonstrates how to run Triva with HTTPS
  */
 
-import { build, get, listen } from '../lib/index.js';
+import { build } from '../lib/index.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 //   -keyout localhost-key.pem -out localhost-cert.pem
 
 async function startHTTPSServer() {
-  await build({
+  const instanceBuild = new build({
     env: 'development',
     protocol: 'https',
     ssl: {
@@ -38,15 +38,15 @@ async function startHTTPSServer() {
   });
 
   // Define routes (same as HTTP)
-  get('/', (req, res) => {
-    res.json({ 
+  instanceBuild.get('/', (req, res) => {
+    res.json({
       message: 'Secure Triva HTTPS Server',
       protocol: 'https',
       secure: true
     });
   });
 
-  get('/api/data', (req, res) => {
+  instanceBuild.get('/api/data', (req, res) => {
     res.json({
       data: [1, 2, 3, 4, 5],
       timestamp: new Date().toISOString()
@@ -54,7 +54,7 @@ async function startHTTPSServer() {
   });
 
   // Start HTTPS server on port 443 (or 3443 for development)
-  listen(3443);
+  instanceBuild.listen(3443);
 }
 
 startHTTPSServer().catch(err => {

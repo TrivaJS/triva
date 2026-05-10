@@ -1,2 +1,6 @@
 node_modules
 package-lock.json
+backups/
+examples/certs/
+backups/
+examples/certs/

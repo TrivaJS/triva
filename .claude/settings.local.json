@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C C:/Users/krisp/OneDrive/Documents/GitHub/triva submodule status)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(git -C C:/Users/krisp/OneDrive/Documents/GitHub/triva/docs diff assets/css/style.css)",
+      "Bash(git -C C:/Users/krisp/OneDrive/Documents/GitHub/triva/docs status)",
+      "Bash(git -C C:/Users/krisp/OneDrive/Documents/GitHub/triva/docs show origin/v1.x:assets/css/style.css)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

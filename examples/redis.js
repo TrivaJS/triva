@@ -3,13 +3,13 @@
  * Shows how to use Triva with Redis for high-performance caching
  */
 
-import { build, get, post, listen, cache } from '../lib/index.js';
+import { build, cache } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting Redis Example...\n');
 
   // Build with Redis configuration
-  await build({
+  const instanceBuild = new build({
     env: 'production',
     cache: {
       type: 'redis',
@@ -31,7 +31,7 @@ async function main() {
   console.log('✅ Triva built with Redis!\n');
 
   // High-frequency endpoint with caching
-  get('/api/stats', async (req, res) => {
+  instanceBuild.get('/api/stats', async (req, res) => {
     const cacheKey = 'stats:current';
 
     const cached = await cache.get(cacheKey);
@@ -60,7 +60,7 @@ async function main() {
   });
 
   // Session-like caching
-  post('/sessions', async (req, res) => {
+  instanceBuild.post('/sessions', async (req, res) => {
     const { userId } = await req.json();
     const sessionId = `session:${Date.now()}:${userId}`;
 
@@ -79,7 +79,7 @@ async function main() {
     });
   });
 
-  get('/sessions/:id', async (req, res) => {
+  instanceBuild.get('/sessions/:id', async (req, res) => {
     const session = await cache.get(req.params.id);
 
     if (!session) {
@@ -90,7 +90,7 @@ async function main() {
   });
 
   const port = 3002;
-  listen(port);
+  instanceBuild.listen(port);
 
   console.log(`\n📡 Server running on http://localhost:${port}`);
   console.log(`\n📝 Try these endpoints:`);

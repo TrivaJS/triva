@@ -3,13 +3,13 @@
  * Shows how to use Triva with MongoDB for caching
  */
 
-import { build, get, post, listen, cache } from '../lib/index.js';
+import { build, cache } from '../lib/index.js';
 
 async function main() {
   console.log('🚀 Starting MongoDB Example...\n');
 
   // Build with MongoDB configuration
-  await build({
+  const instanceBuild = new build({
     env: 'development',
     cache: {
       type: 'mongodb',
@@ -29,7 +29,7 @@ async function main() {
   console.log('✅ Triva built with MongoDB!\n');
 
   // Example: Cached endpoint
-  get('/products', async (req, res) => {
+  instanceBuild.get('/products', async (req, res) => {
     const cacheKey = 'products:all';
 
     // Check cache first
@@ -60,7 +60,7 @@ async function main() {
   });
 
   // Example: Cache individual product
-  get('/products/:id', async (req, res) => {
+  instanceBuild.get('/products/:id', async (req, res) => {
     const { id } = req.params;
     const cacheKey = `product:${id}`;
 
@@ -77,7 +77,7 @@ async function main() {
   });
 
   // Clear cache endpoint
-  post('/cache/clear', async (req, res) => {
+  instanceBuild.post('/cache/clear', async (req, res) => {
     const { pattern } = await req.json();
     const deleted = await cache.delete(pattern || 'products:*');
     res.json({
@@ -87,7 +87,7 @@ async function main() {
   });
 
   const port = 3001;
-  listen(port);
+  instanceBuild.listen(port);
 
   console.log(`\n📡 Server running on http://localhost:${port}`);
   console.log(`\n📝 Try these endpoints:`);

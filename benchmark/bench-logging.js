@@ -1,5 +1,5 @@
 import { performance } from 'perf_hooks';
-import { build, log } from '../lib/index.js';
+import { build } from '../lib/index.js';
 
 class BenchmarkRunner {
   constructor() {
@@ -53,11 +53,11 @@ class BenchmarkRunner {
   }
 
   printSummary() {
-      console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
-      this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
-      console.log(`\n${'='.repeat(70)}\n`);
+        console.log(`\n${'='.repeat(70)}\n📈 Benchmark Summary\n`);
+        this.results.forEach(r => console.log(`${r.name.padEnd(40)} ${r.avg.padStart(12)} ${r.opsPerSec.padStart(15)}`));
+        console.log(`\n${'='.repeat(70)}\n`);
+      }
     }
-  }
 
 /**
  * Logging Performance Benchmark
@@ -70,13 +70,15 @@ async function benchmarkLogging() {
 
   const runner = new BenchmarkRunner();
 
-  await build({
+  const instanceBuild = new build({
     cache: { type: 'memory' },
     retention: {
       enabled: true,
       maxEntries: 100000
     }
   });
+
+  instanceBuild.listen(3001);
 
   // Benchmark: Create log entry (simple)
   const simpleLogResult = await runner.run(
@@ -234,6 +236,8 @@ async function benchmarkLogging() {
   runner.printResult(exportResult);
 
   runner.printSummary();
+  instanceBuild.close();
+  process.exit(1);
 }
 
 benchmarkLogging().catch(err => {
