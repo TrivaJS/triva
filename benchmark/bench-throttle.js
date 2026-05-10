@@ -148,10 +148,6 @@ async function benchmarkThrottle() {
         connection: { remoteAddress: '192.168.1.1' },
         headers: { 'x-forwarded-for': '192.168.1.1' }
       };
-
-      const ip = mockReq.headers['x-forwarded-for'] ||
-                 mockReq.socket?.remoteAddress ||
-                 mockReq.connection?.remoteAddress;
     },
     100000
   );

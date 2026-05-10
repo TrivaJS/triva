@@ -5,7 +5,6 @@
  * Command-line interface for managing Triva applications
  */
 
-import { Command } from './lib/command.js';
 import { LogCommands } from './lib/commands/logs.js';
 import { ErrorCommands } from './lib/commands/errors.js';
 import { CacheCommands } from './lib/commands/cache.js';

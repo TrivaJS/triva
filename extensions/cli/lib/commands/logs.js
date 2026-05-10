@@ -10,7 +10,7 @@ export class LogCommands extends Command {
     const config = await this.loadConfig(options.config);
 
     // Import Triva log module
-    const { build, log } = await import('triva');
+    const { build } = await import('triva');
     await build(config);
 
     switch (subcommand) {
