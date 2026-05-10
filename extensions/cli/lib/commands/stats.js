@@ -9,7 +9,7 @@ export class StatsCommands extends Command {
   static async handle(subcommand, options) {
     const config = await this.loadConfig(options.config);
 
-    const { build, log } = await import('triva');
+    const { build } = await import('triva');
     await build(config);
 
     switch (subcommand) {
