@@ -3,7 +3,6 @@
  * Provides common functionality for all CLI commands
  */
 
-import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 
 export class Command {
