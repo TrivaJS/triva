@@ -364,18 +364,6 @@ document.querySelectorAll('svg.lucide').forEach(svg => {
     // ===================================
 
     let autoRotateInterval;
-    const AUTO_ROTATE_DELAY = 5000; // 5 seconds
-    let isAutoRotating = false;
-
-    function startAutoRotate() {
-        if (isAutoRotating) return;
-        isAutoRotating = true;
-
-        autoRotateInterval = setInterval(() => {
-            currentAdapterIndex = (currentAdapterIndex + 1) % adapterTabsArray.length;
-            adapterTabsArray[currentAdapterIndex].click();
-        }, AUTO_ROTATE_DELAY);
-    }
 
     function stopAutoRotate() {
         isAutoRotating = false;
