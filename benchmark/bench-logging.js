@@ -196,7 +196,7 @@ async function benchmarkLogging() {
         userAgent: 'Mozilla/5.0'
       };
 
-      const serialized = JSON.stringify(entry);
+      JSON.stringify(entry);
     },
     50000
   );
