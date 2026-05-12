@@ -152,6 +152,7 @@ async function benchmarkThrottle() {
       const ip = (forwarded ? forwarded.split(',')[0].trim() : null)
         || mockReq.socket.remoteAddress
         || mockReq.connection.remoteAddress;
+      void ip;
       },
     100000
   );
