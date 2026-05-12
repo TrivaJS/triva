@@ -184,12 +184,12 @@ async function benchmarkThrottle() {
       };
 
       // Evaluate policy
-      let limit = 100; // Default
-      if (context.pathname?.startsWith('/api/admin')) {
-        limit = 50;
-      } else if (context.pathname?.startsWith('/api/public')) {
-        limit = 1000;
-      }
+      const limit = context.pathname?.startsWith('/api/admin')
+        ? 50
+        : context.pathname?.startsWith('/api/public')
+          ? 1000
+          : 100; // Default
+      return limit;
     },
     100000
   );
