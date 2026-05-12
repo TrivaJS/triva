@@ -88,7 +88,7 @@ async function benchmarkRouting() {
     async () => {
       const route = simpleRoutes[Math.floor(Math.random() * simpleRoutes.length)];
       // Simulate route matching logic
-      const matched = simpleRoutes.includes(route);
+      simpleRoutes.includes(route);
     },
     50000
   );
