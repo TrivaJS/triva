@@ -201,6 +201,7 @@ async function benchmarkThrottle() {
       const isChrome = lowerUA.includes('chrome');
       const isFirefox = lowerUA.includes('firefox');
       const isSafari = lowerUA.includes('safari') && !isChrome;
+      return Number(isChrome) + Number(isFirefox) + Number(isSafari);
     },
     50000
   );
