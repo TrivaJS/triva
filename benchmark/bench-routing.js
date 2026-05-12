@@ -159,7 +159,6 @@ async function benchmarkRouting() {
   const multiRouteResult = await runner.run(
     'Route Matching (100 routes)',
     async () => {
-      const id = Math.floor(Math.random() * 90) + 10;
       // Simulate matching
     },
     50000
