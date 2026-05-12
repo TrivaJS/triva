@@ -229,7 +229,7 @@ async function benchmarkLogging() {
         statusCode: 200
       }));
 
-      const exported = JSON.stringify(logs, null, 2);
+      JSON.stringify(logs, null, 2);
     },
     1000
   );
