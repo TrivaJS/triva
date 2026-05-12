@@ -84,7 +84,7 @@ async function benchmarkLogging() {
   const simpleLogResult = await runner.run(
     'Create Log Entry (simple)',
     async () => {
-      const entry = {
+      void {
         timestamp: Date.now(),
         method: 'GET',
         path: '/api/test',
@@ -100,7 +100,7 @@ async function benchmarkLogging() {
   const detailedLogResult = await runner.run(
     'Create Log Entry (detailed)',
     async () => {
-      const entry = {
+      void {
         timestamp: Date.now(),
         method: 'POST',
         path: '/api/users',
