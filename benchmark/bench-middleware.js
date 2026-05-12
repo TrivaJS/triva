@@ -196,7 +196,7 @@ async function benchmarkMiddleware() {
     'Cookie Parser Middleware',
     async () => {
       const cookieHeader = 'session=abc123; user=john; theme=dark';
-      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      cookieHeader.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=');
         acc[key] = value;
         return acc;
