@@ -102,7 +102,7 @@ async function benchmarkRouting() {
     async () => {
       const route = '/users/:id';
       const path = '/users/123';
-      const params = extractParams(route, path);
+      extractParams(route, path);
     },
     50000
   );
