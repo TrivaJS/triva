@@ -164,7 +164,7 @@ async function benchmarkThrottle() {
     async () => {
       const ip = 'test-ip';
       const banKey = `ban:${ip}`;
-      const violations = 2; // Under threshold
+      const violations = (Date.now() & 1) === 0 ? 2 : 6; // alternate under/over threshold
       const banned = violations >= 5;
       if (banned && banKey) {
         // no-op: keep branch to model ban decision path
@@ -189,6 +189,12 @@ async function benchmarkThrottle() {
         : context.pathname?.startsWith('/api/public')
           ? 1000
           : 100; // Default
+      let limit = 100; // Default
+      if (context.pathname?.startsWith('/api/admin')) {
+        limit = 50;
+      } else if (context.pathname?.startsWith('/api/public')) {
+        limit = 1000;
+      }
       return limit;
     },
     100000
