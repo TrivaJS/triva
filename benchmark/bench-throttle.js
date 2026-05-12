@@ -190,6 +190,7 @@ async function benchmarkThrottle() {
       } else if (context.pathname?.startsWith('/api/public')) {
         limit = 1000;
       }
+      return limit;
     },
     100000
   );
