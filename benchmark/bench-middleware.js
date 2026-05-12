@@ -211,7 +211,7 @@ async function benchmarkMiddleware() {
     'Body Parser (small JSON)',
     async () => {
       const body = '{"name":"test","value":123}';
-      const parsed = JSON.parse(body);
+      JSON.parse(body);
     },
     50000
   );
