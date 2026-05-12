@@ -229,7 +229,7 @@ async function benchmarkMiddleware() {
   const largeBodyResult = await runner.run(
     'Body Parser (large JSON)',
     async () => {
-      const parsed = JSON.parse(largeBody);
+      JSON.parse(largeBody);
     },
     10000
   );

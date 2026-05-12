@@ -148,7 +148,11 @@ async function benchmarkThrottle() {
         connection: { remoteAddress: '192.168.1.1' },
         headers: { 'x-forwarded-for': '192.168.1.1' }
       };
-    },
+      const forwarded = mockReq.headers['x-forwarded-for'];
+      const ip = (forwarded ? forwarded.split(',')[0].trim() : null)
+        || mockReq.socket.remoteAddress
+        || mockReq.connection.remoteAddress;
+      },
     100000
   );
   runner.printResult(ipExtractionResult);
@@ -197,6 +201,7 @@ async function benchmarkThrottle() {
       const isChrome = lowerUA.includes('chrome');
       const isFirefox = lowerUA.includes('firefox');
       const isSafari = lowerUA.includes('safari') && !isChrome;
+      return Number(isChrome) + Number(isFirefox) + Number(isSafari);
     },
     50000
   );

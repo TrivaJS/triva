@@ -67,10 +67,6 @@ function parseFile(content, filename) {
     exports: []
   };
 
-  // Extract JSDoc comments
-  const jsdocPattern = /\/\*\*[\s\S]*?\*\//g;
-  const jsdocs = content.match(jsdocPattern) || [];
-
   // Extract function exports
   const functionPattern = /export\s+(async\s+)?function\s+(\w+)/g;
   let match;
