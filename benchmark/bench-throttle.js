@@ -90,7 +90,7 @@ async function benchmarkThrottle() {
       const key = `throttle:${ip}`;
 
       // Simulate rate limit check
-      const count = 1; // Under limit
+      const count = key.length % 10; // Under limit
       const allowed = count < 1000;
     },
     50000
