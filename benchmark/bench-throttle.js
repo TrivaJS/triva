@@ -229,6 +229,7 @@ async function benchmarkThrottle() {
         req.headers['user-agent'],
         req.headers['accept-language']
       ].join('|');
+      return fingerprint;
     },
     50000
   );
