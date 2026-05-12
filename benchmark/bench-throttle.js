@@ -166,6 +166,9 @@ async function benchmarkThrottle() {
       const banKey = `ban:${ip}`;
       const violations = 2; // Under threshold
       const banned = violations >= 5;
+      if (banned && banKey) {
+        // no-op: keep branch to model ban decision path
+      }
     },
     100000
   );
