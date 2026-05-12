@@ -113,7 +113,7 @@ async function benchmarkRouting() {
     'Query String Parsing',
     async () => {
       const query = new URLSearchParams('?name=test&age=25&tags=js&tags=node');
-      const parsed = Object.fromEntries(query);
+      Object.fromEntries(query);
     },
     50000
   );
