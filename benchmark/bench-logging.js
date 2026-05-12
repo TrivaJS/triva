@@ -212,7 +212,7 @@ async function benchmarkLogging() {
         statusCode: i % 2 === 0 ? 200 : 404
       }));
 
-      const filtered = logs.filter(log => log.statusCode === 404);
+      void logs.filter(log => log.statusCode === 404).length;
     },
     10000
   );
