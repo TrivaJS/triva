@@ -112,7 +112,7 @@ async function benchmarkThrottle() {
       ];
 
       // Count requests in window
-      const inWindow = timestamps.filter(t => t > now - windowMs).length;
+      timestamps.filter(t => t > now - windowMs).length;
     },
     50000
   );
