@@ -160,7 +160,6 @@ async function benchmarkRouting() {
     'Route Matching (100 routes)',
     async () => {
       const id = Math.floor(Math.random() * 90) + 10;
-      const route = `/api/v1/resources/${id}`;
       // Simulate matching
     },
     50000
