@@ -133,6 +133,7 @@ async function benchmarkThrottle() {
       const burstWindow = 1000;
       const recent = timestamps.filter(t => t > Date.now() - burstWindow);
       const isBurst = recent.length > 5;
+      void isBurst;
     },
     50000
   );
