@@ -124,7 +124,7 @@ async function benchmarkLogging() {
   const timestampResult = await runner.run(
     'Timestamp Formatting',
     async () => {
-      const timestamp = new Date().toISOString();
+      void new Date().toISOString();
     },
     100000
   );
