@@ -91,6 +91,7 @@ async function benchmarkThrottle() {
       // Simulate rate limit check
       const count = key.length % 10; // Under limit
       const allowed = count < 1000;
+      if (allowed) {}
     },
     50000
   );
