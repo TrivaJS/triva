@@ -86,7 +86,6 @@ async function benchmarkThrottle() {
     'Rate Limit Check (allowed)',
     async () => {
       const ip = 'bench-ip-' + Math.random();
-      const timestamp = Date.now();
       const key = `throttle:${ip}`;
 
       // Simulate rate limit check
