@@ -139,6 +139,7 @@ async function benchmarkLogging() {
       await Promise.resolve();
       const end = Date.now();
       const responseTime = end - start;
+      void responseTime;
     },
     50000
   );
